@@ -11,15 +11,12 @@ import type { SecureSession } from '../session/use-secure-session'
 import type { RosterState } from '../roster/use-roster'
 import type { Friend, FriendRequest } from '../roster/types'
 
-// Node souverain par défaut : Pi self-hosted, H24 via Cloudflare Tunnel.
-// Override en dev local : VITE_RELAY_URL=ws://127.0.0.1:8791
-const DEFAULT_RELAY = 'wss://relai.exemple'
-
 interface Args {
   identity: Identity | null
   address: string
   pseudo: string
   mnemonic: string
+  relayUrl: string
   session: SecureSession
   roster: RosterState
   refreshPseudo: () => void
@@ -59,7 +56,7 @@ function shortId(): string {
 
 /** Branche le relai : présence, connexion auto ami-à-ami, et demandes d'amis consenties. */
 export function useRendezvous(args: Args): RendezvousState {
-  const { identity, address, pseudo, mnemonic, session, roster, refreshPseudo } = args
+  const { identity, address, pseudo, mnemonic, relayUrl, session, roster, refreshPseudo } = args
   const clientRef = useRef<RendezvousClient | null>(null)
   const [relayOnline, setRelayOnline] = useState(false)
   const [incoming, setIncoming] = useState<FriendRequest[]>(() => loadJSON<FriendRequest[]>('requests', []))
@@ -67,8 +64,6 @@ export function useRendezvous(args: Args): RendezvousState {
   live.current = { identity, session, roster, pseudo, address, mnemonic, refreshPseudo }
 
   useEffect(() => { saveJSON('requests', incoming) }, [incoming])
-
-  const relayUrl = import.meta.env.VITE_RELAY_URL ?? DEFAULT_RELAY
 
   const handleEnvelope = useCallback((id: string, from: string, payload: string): void => {
     const { identity: id0, roster: r, session: s } = live.current

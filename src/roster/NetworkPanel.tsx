@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { IdentityCard } from '../identity/IdentityCard'
 import { RecoveryPanel } from '../identity/RecoveryPanel'
 import { BackupPanel } from '../backup/BackupPanel'
+import { SettingsPanel } from '../settings/SettingsPanel'
+import type { RelaySetting } from '../settings/use-relay-setting'
 import { AddFriend } from './AddFriend'
 import { FriendsList } from './FriendsList'
 import { FriendRequests } from './FriendRequests'
@@ -12,6 +14,7 @@ import type { Friend, FriendRequest } from './types'
 interface Props {
   identity: IdentityState
   roster: RosterState
+  relay: RelaySetting
   relayOnline: boolean
   requests: FriendRequest[]
   onChat: (friend: Friend) => void
@@ -22,7 +25,7 @@ interface Props {
 
 /** Left console: identity + friend requests + roster. */
 export function NetworkPanel(props: Props): React.ReactElement {
-  const { identity, roster, relayOnline, requests, onChat, onSendRequest, onAccept, onDecline } = props
+  const { identity, roster, relay, relayOnline, requests, onChat, onSendRequest, onAccept, onDecline } = props
   return (
     <motion.aside
       initial={{ opacity: 0, x: -24 }}
@@ -47,6 +50,7 @@ export function NetworkPanel(props: Props): React.ReactElement {
       <FriendRequests requests={requests} onAccept={onAccept} onDecline={onDecline} />
       <AddFriend onSend={onSendRequest} />
       <FriendsList roster={roster} onChat={onChat} />
+      <SettingsPanel relay={relay} relayOnline={relayOnline} />
     </motion.aside>
   )
 }

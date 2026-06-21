@@ -11,6 +11,7 @@ import { useIdentity } from './identity/use-identity'
 import { useRoster } from './roster/use-roster'
 import { useSecureSession } from './session/use-secure-session'
 import { useRendezvous } from './rendezvous/use-rendezvous'
+import { useRelaySetting } from './settings/use-relay-setting'
 
 export function App(): React.ReactElement {
   const [booted, setBooted] = useState(false)
@@ -20,9 +21,11 @@ export function App(): React.ReactElement {
   const roster = useRoster(identity.address || null)
   const session = useSecureSession(identity.identity)
   const unread = useUnread(session.history)
+  const relay = useRelaySetting()
   const rendezvous = useRendezvous({
     identity: identity.identity, address: identity.address, pseudo: identity.pseudo,
-    mnemonic: identity.mnemonic, session, roster, refreshPseudo: identity.refreshPseudo,
+    mnemonic: identity.mnemonic, relayUrl: relay.relayUrl, session, roster,
+    refreshPseudo: identity.refreshPseudo,
   })
 
   // Keep the open conversation marked as read as new messages land.
@@ -70,6 +73,7 @@ export function App(): React.ReactElement {
         <NetworkPanel
           identity={identity}
           roster={roster}
+          relay={relay}
           relayOnline={rendezvous.relayOnline}
           requests={rendezvous.incoming}
           onChat={(f) => openConversation(f.address)}
