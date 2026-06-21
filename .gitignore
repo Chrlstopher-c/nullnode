@@ -8,3 +8,5 @@ logs
 relay/node_modules
 relay/logs
 relay/*.pid
+# Données utilisateur (enveloppes store-and-forward + backups chiffrés) — jamais publiées
+relay/data
