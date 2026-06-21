@@ -115,6 +115,21 @@ Comportement relai :
 Le relai aveugle voit le **graphe social** (qui signale qui) et la **présence** — métadonnées.
 Acceptable pour un relai self-hosted que tu possèdes ; à noter dans la doc sécurité.
 
+## Bornes anti-abus (relai)
+Le relai est exposé publiquement (Cloudflare Tunnel) sans rien lire des payloads. Bornes configurables par env :
+
+| Variable | Défaut | Effet |
+|---|---|---|
+| `RELAY_ENVELOPE_TTL_DAYS` | 7 | TTL des enveloppes non délivrées (purge au chargement + balayage horaire) |
+| `RELAY_MAX_QUEUE_PER_ADDR` | 500 | Max enveloppes en attente par adresse ; drop FIFO des plus anciennes au-delà |
+| `RELAY_MAX_PAYLOAD_BYTES` | 65536 | Taille max d'un payload `signal`/`relay` (64 KB) |
+| `RELAY_MAX_BACKUP_BYTES` | 1048576 | Taille max d'un blob `backup_put` (1 MB) |
+| `RELAY_RATE_PER_SEC` | 30 | Token bucket par socket ; au-delà le message est droppé (la socket n'est PAS kick) |
+| `RELAY_MAX_ADDRESSES` | 10000 | Max adresses stockées globalement (enveloppes + backups), borne mémoire |
+
+Codes d'erreur renvoyés (`{ t:"error", code }`) : `PAYLOAD_TOO_LARGE`, `STORE_FULL`, plus les existants
+`NOT_REGISTERED`, `BAD_MESSAGE`, `PEER_OFFLINE`. Le dépassement de rate-limit ne renvoie pas d'erreur (drop silencieux côté relai, warn côté logs).
+
 ## Contrat existant à réutiliser (NE PAS réécrire)
 - `src/transport/peer-link.ts` : `new PeerLink(onState, onMessage)`, `createOffer()`, `acceptOffer(offer)`,
   `acceptAnswer(answer)`, `send(raw)`, `close()`.

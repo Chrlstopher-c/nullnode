@@ -2,9 +2,11 @@
 
 import type { ServerWebSocket } from "bun";
 import type { ServerMessage } from "./protocol";
+import type { TokenBucket } from "./limits";
 
 export interface SocketData {
   addr: string | null;
+  bucket: TokenBucket;
 }
 
 type Socket = ServerWebSocket<SocketData>;

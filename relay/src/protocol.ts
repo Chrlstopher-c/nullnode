@@ -74,8 +74,16 @@ export interface EnvelopeOutMessage {
 
 export interface ErrorMessage {
   t: "error";
-  code: string;
+  code: ErrorCode;
 }
+
+export type ErrorCode =
+  | "NOT_REGISTERED"
+  | "BAD_MESSAGE"
+  | "PEER_OFFLINE"
+  | "PAYLOAD_TOO_LARGE"
+  | "RATE_LIMITED"
+  | "STORE_FULL";
 
 export interface BackupOutMessage {
   t: "backup";

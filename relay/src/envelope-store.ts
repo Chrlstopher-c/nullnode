@@ -4,6 +4,12 @@
 import signale from "signale";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
+import {
+  ENVELOPE_TTL_MS,
+  MAX_QUEUE_PER_ADDR,
+  MAX_ADDRESSES,
+  TTL_SWEEP_INTERVAL_MS,
+} from "./limits";
 
 export interface Envelope {
   id: string;
@@ -20,11 +26,22 @@ export class EnvelopeStore {
   private readonly byAddress = new Map<string, Envelope[]>();
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
-  add(env: Envelope): void {
-    const list = this.byAddress.get(env.to) ?? [];
+  // Stocke une enveloppe. Refuse si store plein (nouvelle adresse). Drop FIFO si file pleine.
+  add(env: Envelope): boolean {
+    const existing = this.byAddress.get(env.to);
+    if (!existing && this.byAddress.size >= MAX_ADDRESSES) {
+      signale.warn(`store full (${MAX_ADDRESSES} addr): dropping envelope to ${env.to}`);
+      return false;
+    }
+    const list = existing ?? [];
     list.push(env);
+    if (list.length > MAX_QUEUE_PER_ADDR) {
+      const dropped = list.splice(0, list.length - MAX_QUEUE_PER_ADDR);
+      signale.warn(`queue cap ${MAX_QUEUE_PER_ADDR} for ${env.to}: dropped ${dropped.length} oldest`);
+    }
     this.byAddress.set(env.to, list);
     this.scheduleFlush();
+    return true;
   }
 
   pendingFor(addr: string): Envelope[] {
@@ -48,9 +65,31 @@ export class EnvelopeStore {
       const raw: unknown = await file.json();
       this.hydrate(raw);
       signale.info(`envelopes loaded: ${this.byAddress.size} address(es)`);
+      this.purgeExpired();
     } catch (err) {
       signale.error("envelope load failed:", err);
     }
+  }
+
+  // Supprime les enveloppes dont `at` dépasse le TTL. Persiste si quelque chose a été retiré.
+  purgeExpired(): void {
+    const cutoff = Date.now() - ENVELOPE_TTL_MS;
+    let removed = 0;
+    for (const [addr, list] of this.byAddress) {
+      const kept = list.filter((env) => env.at >= cutoff);
+      removed += list.length - kept.length;
+      if (kept.length === 0) this.byAddress.delete(addr);
+      else if (kept.length !== list.length) this.byAddress.set(addr, kept);
+    }
+    if (removed > 0) {
+      signale.warn(`TTL purge: removed ${removed} expired envelope(s)`);
+      this.scheduleFlush();
+    }
+  }
+
+  // Démarre le balayage périodique TTL. Retourne le handle pour arrêt éventuel.
+  startSweep(): ReturnType<typeof setInterval> {
+    return setInterval(() => this.purgeExpired(), TTL_SWEEP_INTERVAL_MS);
   }
 
   private hydrate(raw: unknown): void {

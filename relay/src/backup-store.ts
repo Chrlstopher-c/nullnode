@@ -3,6 +3,7 @@
 import signale from "signale";
 import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
+import { MAX_ADDRESSES } from "./limits";
 
 const DATA_FILE = new URL("../data/backups.json", import.meta.url).pathname;
 const FLUSH_DEBOUNCE_MS = 500;
@@ -11,9 +12,15 @@ export class BackupStore {
   private readonly byAddress = new Map<string, string>();
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
-  put(addr: string, blob: string): void {
+  // Écrase le blob de l'adresse. Refuse si store plein (nouvelle adresse).
+  put(addr: string, blob: string): boolean {
+    if (!this.byAddress.has(addr) && this.byAddress.size >= MAX_ADDRESSES) {
+      signale.warn(`backup store full (${MAX_ADDRESSES} addr): refused ${addr}`);
+      return false;
+    }
     this.byAddress.set(addr, blob);
     this.scheduleFlush();
+    return true;
   }
 
   get(addr: string): string | null {

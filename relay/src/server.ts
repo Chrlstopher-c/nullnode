@@ -14,6 +14,13 @@ import {
   type AckMessage,
   type BackupPutMessage,
 } from "./protocol";
+import {
+  consumeToken,
+  createBucket,
+  payloadBytes,
+  MAX_PAYLOAD_BYTES,
+  MAX_BACKUP_BYTES,
+} from "./limits";
 
 const PORT = Number(process.env.RELAY_PORT ?? 8791);
 const registry = new Registry();
@@ -47,8 +54,17 @@ function handleRelay(ws: Socket, msg: RelayInMessage): void {
     ws.send(JSON.stringify({ t: "error", code: "NOT_REGISTERED" }));
     return;
   }
+  if (payloadBytes(msg.payload) > MAX_PAYLOAD_BYTES) {
+    ws.send(JSON.stringify({ t: "error", code: "PAYLOAD_TOO_LARGE" }));
+    signale.warn(`relay ${from} -> ${msg.to}: PAYLOAD_TOO_LARGE`);
+    return;
+  }
   const id = crypto.randomUUID().slice(0, 8);
-  envelopes.add({ id, from, to: msg.to, payload: msg.payload, at: Date.now() });
+  const stored = envelopes.add({ id, from, to: msg.to, payload: msg.payload, at: Date.now() });
+  if (!stored) {
+    ws.send(JSON.stringify({ t: "error", code: "STORE_FULL" }));
+    return;
+  }
   const delivered = registry.send(msg.to, { t: "envelope", id, from, payload: msg.payload });
   signale.info(`relay ${from} -> ${msg.to} [${id}] (${delivered ? "online" : "stored"})`);
 }
@@ -69,7 +85,15 @@ function handleBackupPut(ws: Socket, msg: BackupPutMessage): void {
     ws.send(JSON.stringify({ t: "error", code: "NOT_REGISTERED" }));
     return;
   }
-  backups.put(addr, msg.blob);
+  if (payloadBytes(msg.blob) > MAX_BACKUP_BYTES) {
+    ws.send(JSON.stringify({ t: "error", code: "PAYLOAD_TOO_LARGE" }));
+    signale.warn(`backup_put ${addr}: PAYLOAD_TOO_LARGE`);
+    return;
+  }
+  if (!backups.put(addr, msg.blob)) {
+    ws.send(JSON.stringify({ t: "error", code: "STORE_FULL" }));
+    return;
+  }
   signale.info(`backup_put ${addr}`);
 }
 
@@ -89,6 +113,11 @@ function handleSignal(ws: Socket, msg: SignalInMessage): void {
     ws.send(JSON.stringify({ t: "error", code: "NOT_REGISTERED" }));
     return;
   }
+  if (payloadBytes(msg.payload) > MAX_PAYLOAD_BYTES) {
+    ws.send(JSON.stringify({ t: "error", code: "PAYLOAD_TOO_LARGE" }));
+    signale.warn(`signal ${from} -> ${msg.to}: PAYLOAD_TOO_LARGE`);
+    return;
+  }
   const delivered = registry.send(msg.to, { t: "signal", from, payload: msg.payload });
   if (!delivered) {
     ws.send(JSON.stringify({ t: "error", code: "PEER_OFFLINE" }));
@@ -99,6 +128,10 @@ function handleSignal(ws: Socket, msg: SignalInMessage): void {
 }
 
 function routeMessage(ws: Socket, raw: string | Buffer): void {
+  if (!consumeToken(ws.data.bucket)) {
+    signale.warn(`rate-limited: ${ws.data.addr ?? "anon"} (dropped message)`);
+    return;
+  }
   try {
     const parsed: unknown = JSON.parse(raw.toString());
     const msg = parseClientMessage(parsed);
@@ -134,11 +167,12 @@ function handleClose(ws: Socket): void {
 
 await envelopes.load();
 await backups.load();
+envelopes.startSweep();
 
 const server = Bun.serve<SocketData>({
   port: PORT,
   fetch(req, srv): Response | undefined {
-    if (srv.upgrade(req, { data: { addr: null } })) return undefined;
+    if (srv.upgrade(req, { data: { addr: null, bucket: createBucket() } })) return undefined;
     return new Response("NULLNODE blind rendezvous relay", { status: 426 });
   },
   websocket: {
