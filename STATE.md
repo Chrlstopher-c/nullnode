@@ -64,13 +64,31 @@ fédérés. « Zéro dépendance externe imposée » ≠ « zéro machine » —
   connexion auto ami-à-ami via bouton CALL).
 - ✅ Panneau réseau : statut RELAY UP/DOWN, présence temps réel, bouton CALL par ami online.
 
-## ▶ REPRISE — lire en premier
-**P1 backup zero-knowledge core = LIVRÉ + validé runtime** (cycle pull/push prouvé, blobs
-opaques sur disque, zéro erreur console). Reste à valider à la main la **vraie récupération
-nouvel appareil** (noter seed → autre navigateur → RESTORE seed → backupGet → merge) — P0.
-Prochains morceaux : **per-account prefixing** (dette multi-compte), **messages async**,
-**multi-conversation**. Backlog complet dans `TODO.md`. Relai : `cd relay && ./start.sh`
-(:8791). App : `./start.sh` (:5180). Mono-session WebRTC actuelle.
+## ▶ REPRISE — lire en premier (2026-06-21, suite sécurité + desktop)
+Repo **public** : github.com/trinityUwU/nullnode. P1 (durcissement) + P2 (daemon) **livrés et
+validés** ce jour. État : socle réseau + rendez-vous + backup + sécurité at-rest + multi-compte
++ scaffold daemon Tauri. **Prochain sujet décidé avec Chris : l'interface immersive** (refonte
+UI/UX). Différé explicitement : anti-MITM (SAS), mesh peer-relay (réserve technique : fuite
+métadonnées, fallback only — à cadrer ensemble), UI nodes-driven, packaging `tauri build`.
+Relai local : `cd relay && ./start.sh` (:8791). App web : `./start.sh` (:5180). Daemon desktop :
+`bun run tauri:dev` (à valider sur machine : tray/autostart/notifs non testables headless).
+
+## Sécurité + desktop — LIVRÉ (2026-06-21)
+- ✅ **Relay durci** (`relay/src/limits.ts` + stores) : TTL enveloppes (7j, sweep horaire), cap
+  file FIFO/destinataire, cap payload/backup, rate-limit token-bucket lazy/socket, cap mémoire.
+  Tout en env `RELAY_*`. Indispensable vu le node exposé H24 sur internet.
+- ✅ **Seed chiffrée at-rest** (`src/identity/vault/seed-vault.ts`) : vault PIN `crypto_pwhash`
+  (Argon2 INTERACTIVE) + `secretbox`. États auth `anon`/`locked`/`ready`, migration des comptes
+  en clair, écrans `UnlockForm`/`PinStep`. Seed déchiffrée en sessionStorage (refresh sans PIN).
+- ✅ **Multi-compte cloisonné** (`src/shared/local-store.ts`) : partition `acct.<addr>.*`
+  (roster/history/seen/requests/pseudo), `migrateAccount` non-destructif. Split **App/SessionApp**
+  → les hooks par-compte montent avec une adresse garantie (zéro fuite inter-comptes).
+- ✅ **Daemon Tauri 2** (`src-tauri/`) : ghost process au boot (fenêtre cachée), tient la présence
+  relay quand la GUI est fermée, tray bouclier, GUI à la demande. **Handoff** car le relay ne garde
+  qu'1 socket/adresse : ouverture GUI → daemon stop ; fermeture → daemon restart. Aucune seed côté
+  Rust. Bridge JS no-op hors Tauri (`src/desktop/`). `cargo check` + `tsc` verts.
+- ⚠ **libsodium = `-sumo`** (toute l'app) : le build base n'a PAS `crypto_pwhash`. Constantes
+  sodium lues à l'appel (après `ready`), jamais au top-level.
 
 ## Backup zero-knowledge (2026-06-21) — LIVRÉ
 - ✅ `src/backup/backup-crypto.ts` : `sealBackup`/`openBackup`, clé dérivée de la seed BIP39
@@ -129,8 +147,9 @@ ne se teste pas headless. Sans STUN → LAN/localhost uniquement (WAN = TODO).
 3. Onglet A : coller l'ANSWER → ESTABLISH LINK. Canal sécurisé des deux côtés.
 
 ## Dette / prochaines étapes
-- Packaging **Electron** (actuellement web Vite) — pour le rendu WebGL cohérent en desktop.
+- **Interface immersive** (prochain sujet) — refonte UI/UX.
+- Packaging desktop via **`tauri build`** (scaffold prêt, plus besoin d'Electron).
+- Anti-MITM SAS (différé), mesh peer-relay (différé, à cadrer), UI nodes-driven (différé).
 - STUN optionnel pour le WAN (aujourd'hui LAN/host candidates only).
-- QR code pour le dead-drop (au lieu du copier/coller seul).
 - Transfert de fichiers chiffré sur le DataChannel.
 - Idle/reconnect handling (phase `lost`).
