@@ -9,6 +9,7 @@ import { useUnread } from './comms/use-unread'
 import { useRoster } from './roster/use-roster'
 import { useSecureSession } from './session/use-secure-session'
 import { useRendezvous } from './rendezvous/use-rendezvous'
+import { useDesktopPresence } from './desktop/use-desktop-presence'
 import type { IdentityState } from './identity/use-identity'
 import type { RelaySetting } from './settings/use-relay-setting'
 
@@ -32,6 +33,9 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
     mnemonic: identity.mnemonic, relayUrl: relay.relayUrl, session, roster,
     refreshPseudo: identity.refreshPseudo,
   })
+
+  // Daemon desktop : présence relay tenue par le ghost quand la GUI est fermée (no-op hors Tauri).
+  useDesktopPresence({ ready: identity.status === 'ready', address: identity.address, relayUrl: relay.relayUrl })
 
   const { markSeen } = unread
   useEffect(() => { if (chatPeer) markSeen(chatPeer) }, [chatPeer, session.history, markSeen])

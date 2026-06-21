@@ -4,6 +4,10 @@ logs
 *.pid
 .env
 
+# tauri (build Rust)
+src-tauri/target
+src-tauri/gen
+
 # relay
 relay/node_modules
 relay/logs
