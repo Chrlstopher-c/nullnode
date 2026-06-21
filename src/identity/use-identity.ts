@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { loadJSON, saveJSON } from '../shared/local-store'
+import { useEffect, useRef, useState } from 'react'
+import { loadJSON, saveJSON, loadAccount, saveAccount, migrateAccount } from '../shared/local-store'
 import { callsign, encodeAddress, handle } from './address'
 import { identityFromMnemonic, isValidMnemonic } from './seed'
 import { isVaultBlob, openSeed, sealSeed } from './vault/seed-vault'
@@ -38,24 +38,23 @@ function saveSessionSeed(mnemonic: string): void {
 
 interface StartupState {
   status: AuthStatus
-  identity: Identity | null
   mnemonic: string
   legacy: string | null
 }
 
 /** Décide l'état initial : session ouverte → ready, vault → locked, legacy clair → anon+migration, rien → anon. */
-async function resolveStartup(): Promise<StartupState> {
+function resolveStartup(): StartupState {
   const sessionSeed = loadSessionSeed()
   if (sessionSeed && isValidMnemonic(sessionSeed)) {
-    return { status: 'ready', identity: await identityFromMnemonic(sessionSeed), mnemonic: sessionSeed, legacy: null }
+    return { status: 'ready', mnemonic: sessionSeed, legacy: null }
   }
   const vault = loadJSON<unknown>(VAULT_KEY, null)
   if (isVaultBlob(vault)) {
-    return { status: 'locked', identity: null, mnemonic: '', legacy: null }
+    return { status: 'locked', mnemonic: '', legacy: null }
   }
   const legacy = loadJSON<string>(LEGACY_KEY, '')
   const hasLegacy = Boolean(legacy) && isValidMnemonic(legacy)
-  return { status: 'anon', identity: null, mnemonic: '', legacy: hasLegacy ? legacy : null }
+  return { status: 'anon', mnemonic: '', legacy: hasLegacy ? legacy : null }
 }
 
 export interface IdentityState {
@@ -81,21 +80,30 @@ export function useIdentity(): IdentityState {
   const [identity, setIdentity] = useState<Identity | null>(null)
   const [mnemonic, setMnemonic] = useState('')
   const [legacySeed, setLegacySeed] = useState<string | null>(null)
-  const [pseudo, setPseudoState] = useState<string>(() => loadJSON<string>('pseudo', ''))
+  const [pseudo, setPseudoState] = useState<string>('')
+  const addrRef = useRef('')
 
-  useEffect(() => {
-    resolveStartup()
-      .then((s) => {
-        setIdentity(s.identity); setMnemonic(s.mnemonic); setLegacySeed(s.legacy); setStatus(s.status)
-      })
-      .catch((err) => { console.error('[identity] startup failed', err); setStatus('anon') })
-  }, [])
-
+  // Active la partition de stockage du compte (migration unique des clés globales héritées)
+  // et charge son pseudo. Point unique où l'adresse du compte actif devient connue.
   const enterWith = async (clean: string): Promise<void> => {
     const id = await identityFromMnemonic(clean)
+    const addr = encodeAddress(id.publicKey)
+    addrRef.current = addr
     saveSessionSeed(clean)
-    setIdentity(id); setMnemonic(clean); setStatus('ready')
+    migrateAccount(addr)
+    setIdentity(id); setMnemonic(clean)
+    setPseudoState(loadAccount<string>(addr, 'pseudo', ''))
+    setStatus('ready')
   }
+
+  useEffect(() => {
+    const s = resolveStartup()
+    if (s.status === 'ready' && s.mnemonic) {
+      enterWith(s.mnemonic).catch((err) => { console.error('[identity] startup failed', err); setStatus('anon') })
+      return
+    }
+    setLegacySeed(s.legacy); setStatus(s.status)
+  }, [])
 
   const persistVault = async (clean: string, pin: string): Promise<AuthResult> => {
     const blob = await sealSeed(clean, pin)
@@ -105,8 +113,11 @@ export function useIdentity(): IdentityState {
     return { ok: true }
   }
 
-  const setPseudo = (next: string): void => { setPseudoState(next); saveJSON('pseudo', next) }
-  const refreshPseudo = (): void => setPseudoState(loadJSON<string>('pseudo', ''))
+  const setPseudo = (next: string): void => {
+    setPseudoState(next)
+    if (addrRef.current) saveAccount(addrRef.current, 'pseudo', next)
+  }
+  const refreshPseudo = (): void => setPseudoState(loadAccount<string>(addrRef.current, 'pseudo', ''))
 
   const unlock = async (pin: string): Promise<AuthResult> => {
     try {
@@ -127,9 +138,8 @@ export function useIdentity(): IdentityState {
     if (!isValidMnemonic(clean)) return { ok: false, error: 'INVALID PHRASE' }
     const sealed = await persistVault(clean, pin)
     if (!sealed.ok) return sealed
-    saveJSON('pseudo', name.trim())
-    setPseudoState(name.trim())
     await enterWith(clean)
+    setPseudo(name.trim())
     return { ok: true }
   }
 
@@ -138,8 +148,6 @@ export function useIdentity(): IdentityState {
     if (!isValidMnemonic(clean)) return { ok: false, error: 'INVALID RECOVERY PHRASE' }
     const sealed = await persistVault(clean, pin)
     if (!sealed.ok) return sealed
-    saveJSON('pseudo', '')
-    setPseudoState('')
     await enterWith(clean)
     return { ok: true }
   }

@@ -46,7 +46,7 @@ export function NetworkPanel(props: Props): React.ReactElement {
       </header>
       <IdentityCard identity={identity} />
       <RecoveryPanel identity={identity} />
-      <BackupPanel mnemonic={identity.mnemonic} />
+      <BackupPanel mnemonic={identity.mnemonic} selfAddr={identity.address} />
       <FriendRequests requests={requests} onAccept={onAccept} onDecline={onDecline} />
       <AddFriend onSend={onSendRequest} />
       <FriendsList roster={roster} onChat={onChat} />

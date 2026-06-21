@@ -1,18 +1,16 @@
-import { loadJSON, saveJSON } from '../shared/local-store'
+import { loadAccount, saveAccount } from '../shared/local-store'
 import type { SecureMessage } from '../shared/types'
 
-const KEY = 'history'
-
-/** Historique des messages, indexé par adresse NULLNODE du pair. Persistant. */
+/** Historique des messages, indexé par adresse NULLNODE du pair. Persistant, cloisonné par compte. */
 export type History = Record<string, SecureMessage[]>
 
-export function loadHistory(): History {
-  return loadJSON<History>(KEY, {})
+export function loadHistory(selfAddr: string): History {
+  return loadAccount<History>(selfAddr, 'history', {})
 }
 
-export function appendMessage(history: History, peer: string, msg: SecureMessage): History {
+export function appendMessage(selfAddr: string, history: History, peer: string, msg: SecureMessage): History {
   const next = { ...history, [peer]: [...(history[peer] ?? []), msg] }
-  saveJSON(KEY, next)
+  saveAccount(selfAddr, 'history', next)
   return next
 }
 

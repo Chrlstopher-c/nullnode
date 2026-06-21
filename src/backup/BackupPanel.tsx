@@ -3,14 +3,14 @@ import { sealBackup, openBackup } from './backup-crypto'
 import { collectBackupState, mergeBackupState } from './backup-sync'
 
 /** Filet souverain : export/import d'un blob chiffré (clé dérivée de la seed). */
-export function BackupPanel({ mnemonic }: { mnemonic: string }): React.ReactElement {
+export function BackupPanel({ mnemonic, selfAddr }: { mnemonic: string; selfAddr: string }): React.ReactElement {
   const fileRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState('')
 
   const doExport = async (): Promise<void> => {
     if (!mnemonic) return
     try {
-      const blob = await sealBackup(collectBackupState(), mnemonic)
+      const blob = await sealBackup(collectBackupState(selfAddr), mnemonic)
       const url = URL.createObjectURL(new Blob([blob], { type: 'application/octet-stream' }))
       const a = document.createElement('a')
       a.href = url
@@ -28,7 +28,7 @@ export function BackupPanel({ mnemonic }: { mnemonic: string }): React.ReactElem
     try {
       const state = await openBackup(await file.text(), mnemonic)
       if (!state) { setStatus('WRONG SEED / CORRUPT'); return }
-      if (mergeBackupState(state)) window.location.reload()
+      if (mergeBackupState(selfAddr, state)) window.location.reload()
       else setStatus('NOTHING NEW')
     } catch (err) {
       console.error('[backup] import failed', err)

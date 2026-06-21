@@ -36,12 +36,15 @@ export function useSecureSession(identity: Identity | null): SecureSession {
   const [peerAddress, setPeerAddress] = useState('')
   const [peerFingerprint, setPeerFingerprint] = useState('')
   const [localDrop, setLocalDrop] = useState('')
-  const [history, setHistory] = useState<History>(() => loadHistory())
+  const selfAddr = identity ? encodeAddress(identity.publicKey) : ''
+  const [history, setHistory] = useState<History>(() => loadHistory(selfAddr))
 
   const linkRef = useRef<PeerLink | null>(null)
   const keysRef = useRef<SessionKeys | null>(null)
   const identityRef = useRef<Identity | null>(null)
   const peerRef = useRef('')
+  const selfAddrRef = useRef(selfAddr)
+  selfAddrRef.current = selfAddr
 
   useEffect(() => {
     if (identity) { identityRef.current = identity; setPhase('idle') }
@@ -50,7 +53,7 @@ export function useSecureSession(identity: Identity | null): SecureSession {
 
   const record = useCallback((msg: SecureMessage): void => {
     if (!peerRef.current) return
-    setHistory((prev) => appendMessage(prev, peerRef.current, msg))
+    setHistory((prev) => appendMessage(selfAddrRef.current, prev, peerRef.current, msg))
   }, [])
 
   const handleIncoming = useCallback((raw: string): void => {
@@ -123,13 +126,13 @@ export function useSecureSession(identity: Identity | null): SecureSession {
 
   const getMessages = useCallback((peer: string): SecureMessage[] => messagesFor(history, peer), [history])
 
-  const hydrateHistory = useCallback((): void => setHistory(loadHistory()), [])
+  const hydrateHistory = useCallback((): void => setHistory(loadHistory(selfAddrRef.current)), [])
 
   // Insère un message reçu hors-DataChannel (store-and-forward), dédupliqué par id.
   const appendExternal = useCallback((peer: string, msg: SecureMessage): void => {
     setHistory((prev) => {
       if ((prev[peer] ?? []).some((m) => m.id === msg.id)) return prev
-      return appendMessage(prev, peer, msg)
+      return appendMessage(selfAddrRef.current, prev, peer, msg)
     })
   }, [])
 

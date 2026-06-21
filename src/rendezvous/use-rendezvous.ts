@@ -5,7 +5,7 @@ import { ensureSealReady, openSignal, sealSignal } from './sealed-signal'
 import { openEnvelope, sealEnvelope, type SocialBody } from './social-envelope'
 import { sealBackup, openBackup } from '../backup/backup-crypto'
 import { collectBackupState, mergeBackupState } from '../backup/backup-sync'
-import { loadJSON, saveJSON } from '../shared/local-store'
+import { loadAccount, saveAccount } from '../shared/local-store'
 import type { Identity } from '../shared/types'
 import type { SecureSession } from '../session/use-secure-session'
 import type { RosterState } from '../roster/use-roster'
@@ -59,11 +59,11 @@ export function useRendezvous(args: Args): RendezvousState {
   const { identity, address, pseudo, mnemonic, relayUrl, session, roster, refreshPseudo } = args
   const clientRef = useRef<RendezvousClient | null>(null)
   const [relayOnline, setRelayOnline] = useState(false)
-  const [incoming, setIncoming] = useState<FriendRequest[]>(() => loadJSON<FriendRequest[]>('requests', []))
+  const [incoming, setIncoming] = useState<FriendRequest[]>(() => loadAccount<FriendRequest[]>(address, 'requests', []))
   const live = useRef({ identity, session, roster, pseudo, address, mnemonic, refreshPseudo })
   live.current = { identity, session, roster, pseudo, address, mnemonic, refreshPseudo }
 
-  useEffect(() => { saveJSON('requests', incoming) }, [incoming])
+  useEffect(() => { if (address) saveAccount(address, 'requests', incoming) }, [incoming, address])
 
   const handleEnvelope = useCallback((id: string, from: string, payload: string): void => {
     const { identity: id0, roster: r, session: s } = live.current
@@ -78,11 +78,11 @@ export function useRendezvous(args: Args): RendezvousState {
   // Pull au login : restaure roster/historique depuis le blob chiffré, hydrate le state en place
   // (jamais de window.reload : il coupe le socket et boucle).
   const handleBackup = useCallback((blob: string | null): void => {
-    const { mnemonic: m, session: s, roster: r, refreshPseudo: refresh } = live.current
+    const { mnemonic: m, session: s, roster: r, refreshPseudo: refresh, address: self } = live.current
     if (!blob || !m) return
     void openBackup(blob, m)
       .then((state) => {
-        if (state && mergeBackupState(state)) { s.hydrateHistory(); r.hydrate(); refresh() }
+        if (state && mergeBackupState(self, state)) { s.hydrateHistory(); r.hydrate(); refresh() }
       })
       .catch((err) => console.error('[backup] restore failed', err))
   }, [])
@@ -98,10 +98,10 @@ export function useRendezvous(args: Args): RendezvousState {
 
   // Push debouncé : scelle l'état courant et l'envoie au relai (opaque).
   const pushBackup = useCallback((): void => {
-    const { mnemonic: m } = live.current
+    const { mnemonic: m, address: self } = live.current
     const client = clientRef.current
     if (!m || !client) return
-    void sealBackup(collectBackupState(), m)
+    void sealBackup(collectBackupState(self), m)
       .then((blob) => client.backupPut(blob))
       .catch((err) => console.error('[backup] push failed', err))
   }, [])

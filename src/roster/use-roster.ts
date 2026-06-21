@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import sodium from 'libsodium-wrappers-sumo'
 import { decodeAddress, callsign } from '../identity/address'
 import { deriveFingerprint, ensureReady } from '../crypto/identity'
-import { loadJSON, saveJSON } from '../shared/local-store'
+import { loadAccount, saveAccount } from '../shared/local-store'
 import type { Friend, Presence } from './types'
 
 /** Répare une entrée au schéma incomplet (pseudo/callsign/alias manquants) depuis sa clé. */
@@ -46,9 +46,10 @@ export interface RosterState {
 
 /** Local friends roster. No central directory — keys are stored and trusted locally. */
 export function useRoster(selfId: string | null): RosterState {
-  const [friends, setFriends] = useState<Friend[]>(() => loadJSON<Friend[]>('roster', []))
+  const addr = selfId ?? ''
+  const [friends, setFriends] = useState<Friend[]>(() => loadAccount<Friend[]>(addr, 'roster', []))
 
-  useEffect(() => { saveJSON('roster', friends) }, [friends])
+  useEffect(() => { if (selfId) saveAccount(selfId, 'roster', friends) }, [friends, selfId])
 
   // Auto-réparation : comble les pseudos manquants (entrées issues d'un schéma partiel).
   useEffect(() => {
@@ -106,8 +107,8 @@ export function useRoster(selfId: string | null): RosterState {
 
   // Recharge le roster depuis le storage (après restauration d'un backup), sans reload de page.
   const hydrate = useCallback((): void => {
-    setFriends(loadJSON<Friend[]>('roster', []).map(healFriend))
-  }, [])
+    setFriends(loadAccount<Friend[]>(addr, 'roster', []).map(healFriend))
+  }, [addr])
 
   return { friends, addFriend, removeFriend, hasFriend, setPresence, updatePseudo, resetPresence, hydrate }
 }
