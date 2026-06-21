@@ -11,7 +11,9 @@ import type { SecureSession } from '../session/use-secure-session'
 import type { RosterState } from '../roster/use-roster'
 import type { Friend, FriendRequest } from '../roster/types'
 
-const DEFAULT_RELAY = 'ws://127.0.0.1:8791'
+// Node souverain par défaut : Pi self-hosted, H24 via Cloudflare Tunnel.
+// Override en dev local : VITE_RELAY_URL=ws://127.0.0.1:8791
+const DEFAULT_RELAY = 'wss://relai.exemple'
 
 interface Args {
   identity: Identity | null
