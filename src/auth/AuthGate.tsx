@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { LoginForm } from './LoginForm'
 import { RegisterForm } from './RegisterForm'
+import { UnlockForm } from './UnlockForm'
 import type { IdentityState } from '../identity/use-identity'
 
 type Mode = 'choose' | 'login' | 'register'
 
-/** Porte d'entrée : login par phrase ou register (crée la phrase + pseudo). */
+/** Porte d'entrée : unlock (vault verrouillé), login par phrase, ou register. */
 export function AuthGate({ identity }: { identity: IdentityState }): React.ReactElement {
   const [mode, setMode] = useState<Mode>('choose')
+  const locked = identity.status === 'locked'
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center px-6"
@@ -23,9 +25,10 @@ export function AuthGate({ identity }: { identity: IdentityState }): React.React
           <span className="text-[15px] tracking-[0.35em] accent-glow" style={{ color: 'var(--accent)' }}>NULLNODE</span>
           <span className="text-[9px] tracking-[0.2em]" style={{ color: 'var(--text-lo)' }}>sovereign secure peer link</span>
         </div>
-        {mode === 'choose' && <Choose onLogin={() => setMode('login')} onRegister={() => setMode('register')} />}
-        {mode === 'login' && <LoginForm identity={identity} onBack={() => setMode('choose')} />}
-        {mode === 'register' && <RegisterForm identity={identity} onBack={() => setMode('choose')} />}
+        {locked && <UnlockForm identity={identity} />}
+        {!locked && mode === 'choose' && <Choose onLogin={() => setMode('login')} onRegister={() => setMode('register')} />}
+        {!locked && mode === 'login' && <LoginForm identity={identity} onBack={() => setMode('choose')} />}
+        {!locked && mode === 'register' && <RegisterForm identity={identity} onBack={() => setMode('choose')} />}
       </motion.div>
     </motion.div>
   )

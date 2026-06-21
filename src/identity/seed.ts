@@ -1,6 +1,6 @@
 import { generateMnemonic, mnemonicToSeedSync, validateMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import { ensureReady, deriveFingerprint } from '../crypto/identity'
 import type { Identity } from '../shared/types'
 

@@ -1,5 +1,5 @@
 import { callsign, discriminator } from '../identity/address'
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import type { Friend, Presence } from './types'
 import type { RosterState } from './use-roster'
 

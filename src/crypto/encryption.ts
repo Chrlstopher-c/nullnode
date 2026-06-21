@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import { ensureReady, deriveFingerprint } from './identity'
 import type { Identity } from '../shared/types'
 

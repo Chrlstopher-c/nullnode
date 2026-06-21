@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import type { Identity } from '../shared/types'
 
 // Réutilise crypto_box_seal (cf. sealed-signal.ts) : nos keypairs crypto_kx sont

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { PinStep } from '../auth/PinStep'
 import type { IdentityState } from './use-identity'
 
-type Mode = 'closed' | 'reveal' | 'import'
+type Mode = 'closed' | 'reveal' | 'import' | 'import-pin'
 
 /** Recovery phrase: reveal to back up, or import to restore an identity elsewhere. */
 export function RecoveryPanel({ identity }: { identity: IdentityState }): React.ReactElement {
@@ -10,10 +11,12 @@ export function RecoveryPanel({ identity }: { identity: IdentityState }): React.
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [busy, setBusy] = useState(false)
 
-  const doImport = (): void => {
-    const res = identity.importMnemonic(draft)
-    if (!res.ok) setError(res.error ?? 'FAILED')
+  const sealImport = async (pin: string): Promise<void> => {
+    setBusy(true); setError('')
+    const res = await identity.importMnemonic(draft, pin)
+    if (!res.ok) { setError(res.error ?? 'FAILED'); setBusy(false) }
   }
 
   const copyPhrase = async (): Promise<void> => {
@@ -73,10 +76,19 @@ export function RecoveryPanel({ identity }: { identity: IdentityState }): React.
               style={{ borderColor: 'var(--line)', background: 'var(--surface-0)', color: 'var(--text-hi)' }}
             />
             <button
-              onClick={doImport}
+              onClick={() => { if (draft.trim()) { setMode('import-pin'); setError('') } }}
               className="rounded border px-3 py-2 text-[10px] tracking-[0.15em] transition-all hover:brightness-125"
               style={{ borderColor: 'var(--accent-dim)', color: 'var(--accent)' }}
-            >▸ RESTORE IDENTITY (reloads)</button>
+            >▸ RESTORE IDENTITY</button>
+            {error && <span className="text-[9px]" style={{ color: 'var(--danger)' }}>{error}</span>}
+          </motion.div>
+        )}
+        {mode === 'import-pin' && (
+          <motion.div
+            key="import-pin" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="flex flex-col gap-2"
+          >
+            <PinStep title="// SET A PIN" busy={busy} onSubmit={(p) => void sealImport(p)} onBack={() => setMode('import')} />
             {error && <span className="text-[9px]" style={{ color: 'var(--danger)' }}>{error}</span>}
           </motion.div>
         )}

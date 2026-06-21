@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import { decodeAddress, callsign } from '../identity/address'
 import { deriveFingerprint, ensureReady } from '../crypto/identity'
 import { loadJSON, saveJSON } from '../shared/local-store'

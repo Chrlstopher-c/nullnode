@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 
 /** A dead-drop bundles an SDP blob + the sender's public key into one copyable code. */
 export interface DropPayload {

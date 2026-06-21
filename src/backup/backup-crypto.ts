@@ -1,6 +1,6 @@
 // Backup zero-knowledge : scelle l'état utilisateur dans un blob chiffré par clé dérivée de la seed BIP39.
 import { mnemonicToSeedSync } from '@scure/bip39'
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import { ensureReady } from '../crypto/identity'
 
 export interface BackupState {

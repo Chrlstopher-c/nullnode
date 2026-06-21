@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 import { ensureReady } from '../crypto/identity'
 import type { Identity } from '../shared/types'
 

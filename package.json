@@ -16,9 +16,10 @@
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
     "@scure/bip39": "^2.2.0",
+    "@types/libsodium-wrappers-sumo": "^0.8.2",
     "framer-motion": "^12.40.0",
     "gsap": "^3.15.0",
-    "libsodium-wrappers": "^0.8.4",
+    "libsodium-wrappers-sumo": "^0.8.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "three": "^0.184.0"
@@ -26,7 +27,6 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
-    "@types/libsodium-wrappers": "^0.8.2",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

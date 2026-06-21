@@ -51,7 +51,7 @@ export function App(): React.ReactElement {
       <main className="relative h-full w-full overflow-hidden">
         <div className="grid-backdrop absolute inset-0 opacity-60" />
         <div className="absolute inset-0"><NetworkScene phase="idle" /></div>
-        {identity.status === 'anon' && <AuthGate identity={identity} />}
+        {(identity.status === 'anon' || identity.status === 'locked') && <AuthGate identity={identity} />}
       </main>
     )
   }

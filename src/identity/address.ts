@@ -1,4 +1,4 @@
-import sodium from 'libsodium-wrappers'
+import sodium from 'libsodium-wrappers-sumo'
 
 const PREFIX = 'null:'
 const VARIANT = () => sodium.base64_variants.URLSAFE_NO_PADDING

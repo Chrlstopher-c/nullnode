@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { newMnemonic } from '../identity/seed'
+import { PinStep } from './PinStep'
 import type { IdentityState } from '../identity/use-identity'
 
 interface Props {
@@ -7,20 +8,42 @@ interface Props {
   onBack: () => void
 }
 
-/** Création : choisir un pseudo, révéler la phrase générée, confirmer pour entrer. */
+type Phase = 'pseudo' | 'reveal' | 'pin'
+
+/** Création : pseudo → révéler la phrase → définir un PIN → sceller le vault et entrer. */
 export function RegisterForm({ identity, onBack }: Props): React.ReactElement {
+  const [phase, setPhase] = useState<Phase>('pseudo')
   const [pseudo, setPseudo] = useState('')
   const [phrase, setPhrase] = useState('')
   const [copied, setCopied] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-  const generate = (): void => { if (pseudo.trim()) setPhrase(newMnemonic()) }
+  const generate = (): void => { if (pseudo.trim()) { setPhrase(newMnemonic()); setPhase('reveal') } }
 
   const copy = async (): Promise<void> => {
     try { await navigator.clipboard.writeText(phrase); setCopied(true); setTimeout(() => setCopied(false), 1500) }
     catch (err) { console.error('[register] copy failed', err) }
   }
 
-  if (phrase) return <Reveal phrase={phrase} copied={copied} onCopy={() => void copy()} onEnter={() => identity.register(phrase, pseudo)} />
+  const seal = async (pin: string): Promise<void> => {
+    setBusy(true); setError('')
+    const res = await identity.register(phrase, pseudo, pin)
+    if (!res.ok) { setError(res.error ?? 'FAILED'); setBusy(false) }
+  }
+
+  if (phase === 'pin') {
+    return (
+      <div className="flex flex-col gap-2">
+        <PinStep title="// SET A PIN" busy={busy} onSubmit={(p) => void seal(p)} onBack={() => setPhase('reveal')} />
+        {error && <span className="text-[9px]" style={{ color: 'var(--danger)' }}>{error}</span>}
+      </div>
+    )
+  }
+
+  if (phase === 'reveal') {
+    return <Reveal phrase={phrase} copied={copied} onCopy={() => void copy()} onNext={() => setPhase('pin')} />
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -49,11 +72,11 @@ interface RevealProps {
   phrase: string
   copied: boolean
   onCopy: () => void
-  onEnter: () => void
+  onNext: () => void
 }
 
-/** Affiche la phrase générée : à sauvegarder avant d'entrer. */
-function Reveal({ phrase, copied, onCopy, onEnter }: RevealProps): React.ReactElement {
+/** Affiche la phrase générée : à sauvegarder avant de définir le PIN. */
+function Reveal({ phrase, copied, onCopy, onNext }: RevealProps): React.ReactElement {
   return (
     <div className="flex flex-col gap-3">
       <span className="text-[10px] tracking-[0.25em]" style={{ color: 'var(--text-mid)' }}>// YOUR RECOVERY PHRASE</span>
@@ -73,10 +96,10 @@ function Reveal({ phrase, copied, onCopy, onEnter }: RevealProps): React.ReactEl
           style={{ borderColor: 'var(--line)', color: copied ? 'var(--accent)' : 'var(--text-lo)' }}
         >{copied ? '✓ COPIED' : 'COPY'}</button>
         <button
-          onClick={onEnter}
+          onClick={onNext}
           className="flex-1 rounded border px-3 py-2 text-[11px] tracking-[0.15em] transition-all hover:brightness-125"
           style={{ borderColor: 'var(--accent-dim)', color: 'var(--accent)' }}
-        >▸ I SAVED IT — ENTER</button>
+        >▸ I SAVED IT — NEXT</button>
       </div>
     </div>
   )
