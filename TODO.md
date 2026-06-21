@@ -55,19 +55,13 @@ relai puisse lire quoi que ce soit. Couvre le cas « seul connecté → nouvel a
 
 ---
 
-## ▶ PROCHAIN — INTERFACE IMMERSIVE / UI INTÉGRÉE AUX NODES (sujet en cours avec Chris)
-Remplacer les cartes par une UX où tout vit dans le graphe WebGL. Les cartes restent pour
-le test jusqu'à ce que ce soit prêt. **C'est le prochain chantier.**
-- [ ] **Raycasting fiable** (LE point dur, signalé par Chris) : détection souris des nodes
-      robuste (hitboxes généreuses, `raycaster.params.Points.threshold`, ou meshes invisibles
-      d'interaction par-dessus les points). À soigner fortement, sinon hover/clic foireux.
-- [ ] Hover node → label flottant (Messagerie, Historique, Notifications, Demandes d'amis,
-      Profil, Paramètres). Chaque node = une section.
-- [ ] Clic node → ouvre la section correspondante (panneau repliable ou overlay immersif,
-      PAS de bureau à fenêtres — intégré au design).
-- [ ] Section Messagerie depuis le node : dernières conversations triées, ouverture in-graph.
-- [ ] Tri personnalisable des conversations par l'utilisateur (épingler, ordre manuel).
-- [ ] Badges non-lus / notifications visibles directement sur les nodes (pulse, compteur).
+## ❌ ABANDONNÉ (2026-06-21) — INTERFACE IMMERSIVE / NAV DANS LES NODES
+Concept tranché par Chris : **le background WebGL reste purement cosmétique**, jamais un outil
+de navigation. Pas de nodes cliquables, pas de sections-dans-le-graphe. Le background doit
+juste être dynamique (luminescence) et **réactif à l'activité de l'app**. L'UI applicative
+vit en 2D par-dessus (cartes NetworkPanel + CommsConsole). Domaine `navigator/` supprimé.
+- [ ] **(piste cosmétique)** Background réactif à l'activité : pulse de luminescence sur message
+      reçu / connexion établie, au-delà de la réactivité phase déjà en place. À cadrer avec Chris.
 
 ## P2 — SÉCURITÉ & ROBUSTESSE
 - [x] **Seed chiffrée au repos** ✅ (2026-06-21) : vault PIN `crypto_pwhash` (Argon2) + `secretbox`

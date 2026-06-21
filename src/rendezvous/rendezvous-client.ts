@@ -2,8 +2,9 @@
 // Conforme à RENDEZVOUS-PROTOCOL.md : présence + acheminement de blobs opaques.
 
 export interface RendezvousHandlers {
-  onOpen(online: string[]): void
-  onPresence(addr: string, state: 'online' | 'offline'): void
+  onOpen(online: string[], away: string[]): void
+  onPeers(count: number): void
+  onPresence(addr: string, state: 'online' | 'away' | 'offline'): void
   onSignal(from: string, payload: string): void
   onEnvelope(id: string, from: string, payload: string): void
   onBackup(blob: string | null): void
@@ -17,8 +18,10 @@ const BACKOFF_MAX_MS = 15_000
 interface IncomingMessage {
   t: string
   online?: string[]
+  away?: string[]
+  count?: number
   addr?: string
-  state?: 'online' | 'offline'
+  state?: 'online' | 'away' | 'offline'
   from?: string
   payload?: string
   id?: string
@@ -80,6 +83,11 @@ export class RendezvousClient {
     this.sendRaw({ t: 'backup_get' })
   }
 
+  /** Met à jour notre état de présence (propagé aux pairs par le relai). */
+  setPresence(state: 'online' | 'away'): void {
+    this.sendRaw({ t: 'presence_set', state })
+  }
+
   /** Ferme proprement : stoppe heartbeat + reconnexion, ferme le socket. */
   close(): void {
     this.closing = true
@@ -111,7 +119,12 @@ export class RendezvousClient {
     const msg = raw as IncomingMessage // narrowing : objet non-null, champs lus défensivement.
     switch (msg.t) {
       case 'welcome':
-        return this.handlers.onOpen(msg.online ?? [])
+        this.handlers.onOpen(msg.online ?? [], msg.away ?? [])
+        if (typeof msg.count === 'number') this.handlers.onPeers(msg.count)
+        return
+      case 'peers':
+        if (typeof msg.count === 'number') this.handlers.onPeers(msg.count)
+        return
       case 'presence':
         if (msg.addr && msg.state) this.handlers.onPresence(msg.addr, msg.state)
         return

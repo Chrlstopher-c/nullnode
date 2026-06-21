@@ -13,6 +13,7 @@ import {
   type RelayInMessage,
   type AckMessage,
   type BackupPutMessage,
+  type PresenceSetMessage,
 } from "./protocol";
 import {
   consumeToken,
@@ -33,10 +34,14 @@ function handleHello(ws: Socket, msg: HelloMessage): void {
   const previous = ws.data.addr;
   if (previous && previous !== msg.addr) registry.remove(previous);
   ws.data.addr = msg.addr;
+  ws.data.state = "online";
   registry.register(msg.addr, ws);
-  ws.send(JSON.stringify({ t: "welcome", online: registry.online() }));
+  ws.send(JSON.stringify({
+    t: "welcome", online: registry.online(), count: registry.count(), away: registry.awayList(),
+  }));
   registry.broadcastExcept(msg.addr, { t: "presence", addr: msg.addr, state: "online" });
-  signale.success(`online: ${msg.addr} (${registry.online().length} total)`);
+  registry.broadcastAll({ t: "peers", count: registry.count() });
+  signale.success(`online: ${msg.addr} (${registry.count()} total)`);
   flushPending(msg.addr);
 }
 
@@ -107,6 +112,17 @@ function handleBackupGet(ws: Socket): void {
   signale.info(`backup_get ${addr}`);
 }
 
+function handlePresenceSet(ws: Socket, msg: PresenceSetMessage): void {
+  const addr = ws.data.addr;
+  if (!addr) {
+    ws.send(JSON.stringify({ t: "error", code: "NOT_REGISTERED" }));
+    return;
+  }
+  registry.setState(addr, msg.state);
+  registry.broadcastExcept(addr, { t: "presence", addr, state: msg.state });
+  signale.info(`presence ${addr} -> ${msg.state}`);
+}
+
 function handleSignal(ws: Socket, msg: SignalInMessage): void {
   const from = ws.data.addr;
   if (!from) {
@@ -145,6 +161,7 @@ function routeMessage(ws: Socket, raw: string | Buffer): void {
     else if (msg.t === "ack") handleAck(ws, msg);
     else if (msg.t === "backup_put") handleBackupPut(ws, msg);
     else if (msg.t === "backup_get") handleBackupGet(ws);
+    else if (msg.t === "presence_set") handlePresenceSet(ws, msg);
     else if (msg.t === "ping") ws.send(JSON.stringify({ t: "pong" }));
   } catch (err) {
     signale.error("parse/route failed:", err);
@@ -162,7 +179,8 @@ function handleClose(ws: Socket): void {
   registry.remove(addr);
   ws.data.addr = null;
   registry.broadcastExcept(addr, { t: "presence", addr, state: "offline" });
-  signale.info(`offline: ${addr} (${registry.online().length} total)`);
+  registry.broadcastAll({ t: "peers", count: registry.count() });
+  signale.info(`offline: ${addr} (${registry.count()} total)`);
 }
 
 await envelopes.load();
@@ -172,7 +190,7 @@ envelopes.startSweep();
 const server = Bun.serve<SocketData>({
   port: PORT,
   fetch(req, srv): Response | undefined {
-    if (srv.upgrade(req, { data: { addr: null, bucket: createBucket() } })) return undefined;
+    if (srv.upgrade(req, { data: { addr: null, bucket: createBucket(), state: "online" } })) return undefined;
     return new Response("NULLNODE blind rendezvous relay", { status: 426 });
   },
   websocket: {

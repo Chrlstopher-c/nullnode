@@ -3,9 +3,9 @@ import { AnimatePresence } from 'framer-motion'
 import { BootSequence } from './boot/BootSequence'
 import { NetworkScene } from './visualizer/NetworkScene'
 import { HudOverlay } from './hud/HudOverlay'
-import { CommsConsole } from './comms/CommsConsole'
-import { NetworkPanel } from './roster/NetworkPanel'
+import { AppShell } from './shell/AppShell'
 import { useUnread } from './comms/use-unread'
+import { usePins } from './comms/use-pins'
 import { useRoster } from './roster/use-roster'
 import { useSecureSession } from './session/use-secure-session'
 import { useRendezvous } from './rendezvous/use-rendezvous'
@@ -28,11 +28,19 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
   const roster = useRoster(identity.address)
   const session = useSecureSession(identity.identity)
   const unread = useUnread(identity.address, session.history)
+  const pins = usePins(identity.address)
   const rendezvous = useRendezvous({
     identity: identity.identity, address: identity.address, pseudo: identity.pseudo,
-    mnemonic: identity.mnemonic, relayUrl: relay.relayUrl, session, roster,
+    mnemonic: identity.mnemonic, relayUrl: relay.relayUrl, session, roster, pins,
     refreshPseudo: identity.refreshPseudo,
   })
+
+  // Bascule locale + diffusion au pair en une action ; câblée jusqu'à MessageStream.
+  const onTogglePin = useCallback((id: string): void => {
+    if (!chatPeer) return
+    const pinned = pins.togglePin(chatPeer, id)
+    rendezvous.sendPin(chatPeer, id, pinned)
+  }, [chatPeer, pins, rendezvous])
 
   // Daemon desktop : présence relay tenue par le ghost quand la GUI est fermée (no-op hors Tauri).
   useDesktopPresence({ ready: identity.status === 'ready', address: identity.address, relayUrl: relay.relayUrl })
@@ -64,30 +72,28 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
         phase={session.phase}
       />
 
-      <div className="absolute inset-0 flex items-center justify-between gap-8 px-[5vw] py-24">
-        <NetworkPanel
-          identity={identity}
-          roster={roster}
-          relay={relay}
-          relayOnline={rendezvous.relayOnline}
-          requests={rendezvous.incoming}
-          onChat={(f) => openConversation(f.address)}
-          onSendRequest={rendezvous.sendRequest}
-          onAccept={rendezvous.acceptRequest}
-          onDecline={rendezvous.declineRequest}
-        />
-        <CommsConsole
-          session={session}
-          friends={roster.friends}
-          unread={unread}
-          selfPseudo={identity.pseudo}
-          chatPeer={chatPeer}
-          incomingPeer={incomingPeer}
-          onSend={rendezvous.sendDM}
-          onOpenChat={openConversation}
-          onCloseChat={() => setChatPeer(null)}
-        />
-      </div>
+      <AppShell
+        identity={identity}
+        relay={relay}
+        roster={roster}
+        session={session}
+        unread={unread}
+        requests={rendezvous.incoming}
+        relayOnline={rendezvous.relayOnline}
+        peerCount={rendezvous.peerCount}
+        myPresence={rendezvous.myPresence}
+        onSetPresence={rendezvous.setPresence}
+        chatPeer={chatPeer}
+        incomingPeer={incomingPeer}
+        onOpenChat={openConversation}
+        onCloseChat={() => setChatPeer(null)}
+        pinnedIds={chatPeer ? pins.pinnedIds(chatPeer) : []}
+        onTogglePin={onTogglePin}
+        onSend={rendezvous.sendDM}
+        onSendRequest={rendezvous.sendRequest}
+        onAccept={rendezvous.acceptRequest}
+        onDecline={rendezvous.declineRequest}
+      />
 
       <AnimatePresence>
         {!booted && (

@@ -8,6 +8,7 @@ import { collectBackupState, mergeBackupState } from '../backup/backup-sync'
 import { loadAccount, saveAccount } from '../shared/local-store'
 import type { Identity } from '../shared/types'
 import type { SecureSession } from '../session/use-secure-session'
+import type { PinsState } from '../comms/use-pins'
 import type { RosterState } from '../roster/use-roster'
 import type { Friend, FriendRequest } from '../roster/types'
 
@@ -19,6 +20,7 @@ interface Args {
   relayUrl: string
   session: SecureSession
   roster: RosterState
+  pins: PinsState
   refreshPseudo: () => void
 }
 
@@ -42,12 +44,16 @@ async function routeSignal(
 
 export interface RendezvousState {
   relayOnline: boolean
+  peerCount: number
+  myPresence: 'online' | 'away'
+  setPresence: (state: 'online' | 'away') => void
   incoming: FriendRequest[]
   connectTo: (friend: Friend) => Promise<void>
   sendDM: (peer: string, body: string) => void
   sendRequest: (address: string) => { ok: boolean; error?: string }
   acceptRequest: (req: FriendRequest) => void
   declineRequest: (req: FriendRequest) => void
+  sendPin: (peer: string, id: string, pinned: boolean) => void
 }
 
 function shortId(): string {
@@ -56,22 +62,24 @@ function shortId(): string {
 
 /** Branche le relai : présence, connexion auto ami-à-ami, et demandes d'amis consenties. */
 export function useRendezvous(args: Args): RendezvousState {
-  const { identity, address, pseudo, mnemonic, relayUrl, session, roster, refreshPseudo } = args
+  const { identity, address, pseudo, mnemonic, relayUrl, session, roster, pins, refreshPseudo } = args
   const clientRef = useRef<RendezvousClient | null>(null)
   const [relayOnline, setRelayOnline] = useState(false)
+  const [peerCount, setPeerCount] = useState(0)
+  const [myPresence, setMyPresence] = useState<'online' | 'away'>('online')
   const [incoming, setIncoming] = useState<FriendRequest[]>(() => loadAccount<FriendRequest[]>(address, 'requests', []))
-  const live = useRef({ identity, session, roster, pseudo, address, mnemonic, refreshPseudo })
-  live.current = { identity, session, roster, pseudo, address, mnemonic, refreshPseudo }
+  const live = useRef({ identity, session, roster, pins, pseudo, address, mnemonic, refreshPseudo })
+  live.current = { identity, session, roster, pins, pseudo, address, mnemonic, refreshPseudo }
 
   useEffect(() => { if (address) saveAccount(address, 'requests', incoming) }, [incoming, address])
 
   const handleEnvelope = useCallback((id: string, from: string, payload: string): void => {
-    const { identity: id0, roster: r, session: s } = live.current
+    const { identity: id0, roster: r, session: s, pins: p } = live.current
     clientRef.current?.ack([id])
     if (!id0) return
     try {
       const body = openEnvelope(payload, id0)
-      applySocial(body, from, r, s, setIncoming)
+      applySocial(body, from, r, s, p, setIncoming)
     } catch (err) { console.error('[rendezvous] envelope failed', err) }
   }, [])
 
@@ -112,11 +120,13 @@ export function useRendezvous(args: Args): RendezvousState {
     ensureSealReady().then(() => {
       if (!active) return
       const client = new RendezvousClient(relayUrl, address, {
-        onOpen: (online) => {
+        onOpen: (online, away) => {
           setRelayOnline(true)
           online.forEach((a) => live.current.roster.setPresence(a, 'online'))
+          away.forEach((a) => live.current.roster.setPresence(a, 'away'))
           client.backupGet()
         },
+        onPeers: (count) => setPeerCount(count),
         onPresence: (a, s) => {
           live.current.roster.setPresence(a, s)
           if (s === 'online' && live.current.roster.hasFriend(a)) announceProfile(a)
@@ -127,7 +137,7 @@ export function useRendezvous(args: Args): RendezvousState {
         },
         onEnvelope: handleEnvelope,
         onBackup: handleBackup,
-        onClose: () => { setRelayOnline(false); live.current.roster.resetPresence() },
+        onClose: () => { setRelayOnline(false); setPeerCount(0); live.current.roster.resetPresence() },
       })
       clientRef.current = client
       client.connect()
@@ -162,6 +172,21 @@ export function useRendezvous(args: Args): RendezvousState {
       const pub = decodeAddress(peer)
       clientRef.current?.relay(peer, sealEnvelope({ kind: 'dm', id, body: text, at: Date.now(), address: self }, pub))
     } catch (err) { console.error('[rendezvous] dm relay failed', err) }
+  }, [])
+
+  // Diffuse l'état épinglé/désépinglé d'un message au pair (store-and-forward, livré même offline).
+  const sendPin = useCallback((peer: string, id: string, pinned: boolean): void => {
+    const { address: self } = live.current
+    try {
+      const pub = decodeAddress(peer)
+      clientRef.current?.relay(peer, sealEnvelope({ kind: 'pin', id, pinned, address: self }, pub))
+    } catch (err) { console.error('[rendezvous] pin relay failed', err) }
+  }, [])
+
+  // Change notre présence manuelle : informe le relai et met à jour l'état local.
+  const setPresence = useCallback((state: 'online' | 'away'): void => {
+    clientRef.current?.setPresence(state)
+    setMyPresence(state)
   }, [])
 
   const connectTo = useCallback(async (friend: Friend): Promise<void> => {
@@ -206,12 +231,15 @@ export function useRendezvous(args: Args): RendezvousState {
     setIncoming((prev) => prev.filter((x) => x.address !== req.address))
   }, [])
 
-  return { relayOnline, incoming, connectTo, sendDM, sendRequest, acceptRequest, declineRequest }
+  return {
+    relayOnline, peerCount, myPresence, setPresence, incoming,
+    connectTo, sendDM, sendRequest, acceptRequest, declineRequest, sendPin,
+  }
 }
 
 /** Applique une enveloppe sociale entrante : requête en attente, ou acceptation réciproque. */
 function applySocial(
-  body: SocialBody, _from: string, roster: RosterState, session: SecureSession,
+  body: SocialBody, _from: string, roster: RosterState, session: SecureSession, pins: PinsState,
   setIncoming: React.Dispatch<React.SetStateAction<FriendRequest[]>>,
 ): void {
   if (body.kind === 'friend_request') {
@@ -227,5 +255,7 @@ function applySocial(
     session.appendExternal(body.address, {
       id: body.id, author: 'peer', body: body.body, at: body.at, cipherTag: '····',
     })
+  } else if (body.kind === 'pin') {
+    pins.applyRemote(body.address, body.id, body.pinned)
   }
 }

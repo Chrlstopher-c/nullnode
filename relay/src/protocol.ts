@@ -35,6 +35,11 @@ export interface BackupGetMessage {
   t: "backup_get";
 }
 
+export interface PresenceSetMessage {
+  t: "presence_set";
+  state: "online" | "away";
+}
+
 export type ClientMessage =
   | HelloMessage
   | SignalInMessage
@@ -42,17 +47,25 @@ export type ClientMessage =
   | RelayInMessage
   | AckMessage
   | BackupPutMessage
-  | BackupGetMessage;
+  | BackupGetMessage
+  | PresenceSetMessage;
 
 export interface WelcomeMessage {
   t: "welcome";
   online: string[];
+  count: number;
+  away?: string[];
+}
+
+export interface PeersMessage {
+  t: "peers";
+  count: number;
 }
 
 export interface PresenceMessage {
   t: "presence";
   addr: string;
-  state: "online" | "offline";
+  state: "online" | "away" | "offline";
 }
 
 export interface SignalOutMessage {
@@ -92,6 +105,7 @@ export interface BackupOutMessage {
 
 export type ServerMessage =
   | WelcomeMessage
+  | PeersMessage
   | PresenceMessage
   | SignalOutMessage
   | EnvelopeOutMessage
@@ -122,6 +136,9 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
     return { t: "backup_put", blob: raw.blob };
   }
   if (raw.t === "backup_get") return { t: "backup_get" };
+  if (raw.t === "presence_set" && (raw.state === "online" || raw.state === "away")) {
+    return { t: "presence_set", state: raw.state };
+  }
   return null;
 }
 

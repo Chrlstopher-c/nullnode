@@ -1,3 +1,4 @@
+import { MessageSquare, X } from 'lucide-react'
 import { callsign, discriminator } from '../identity/address'
 import sodium from 'libsodium-wrappers-sumo'
 import type { Friend, Presence } from './types'
@@ -44,15 +45,16 @@ export function FriendsList({ roster, onChat }: Props): React.ReactElement {
             <button
               onClick={() => onChat(f)}
               disabled={!online}
-              title={online ? 'open secure chat' : 'peer offline'}
-              className="text-[14px] transition-opacity disabled:opacity-25"
+              title={online ? 'ouvrir le chat sécurisé' : 'contact hors ligne'}
+              className="transition-opacity disabled:opacity-25"
               style={{ color: 'var(--accent)' }}
-            >💬</button>
+            ><MessageSquare size={14} /></button>
             <button
               onClick={() => roster.removeFriend(f.id)}
-              className="text-[11px] opacity-0 transition-opacity group-hover:opacity-100"
+              title="retirer"
+              className="opacity-0 transition-opacity group-hover:opacity-100"
               style={{ color: 'var(--danger)' }}
-            >✕</button>
+            ><X size={13} /></button>
           </div>
         )
       })}

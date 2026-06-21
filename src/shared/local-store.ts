@@ -31,7 +31,7 @@ export function removeKey(key: string): void {
 // Chaque identité a sa propre partition (roster, historique, etc.) pour qu'aucune
 // donnée ne fuite d'un compte à l'autre sur la même machine.
 
-export const ACCOUNT_KEYS = ['roster', 'history', 'seen', 'requests', 'pseudo'] as const
+export const ACCOUNT_KEYS = ['roster', 'history', 'seen', 'requests', 'pseudo', 'pins'] as const
 export type AccountKey = (typeof ACCOUNT_KEYS)[number]
 
 function accountKey(addr: string, key: AccountKey): string {

@@ -28,6 +28,35 @@ export interface SecureSession {
   respondToOffer: (peerPub: Uint8Array, offer: Sdp) => Promise<Sdp>
   applyAnswer: (answer: Sdp) => Promise<void>
   sendMessage: (body: string) => void
+  peerTyping: boolean
+  notifyTyping: () => void
+}
+
+const TYPING_THROTTLE_MS = 2000
+const TYPING_CLEAR_MS = 3500
+
+/** Format chiffré transitant sur le DataChannel : { id, body }. L'ID est partagé entre les
+ * deux pairs (préalable indispensable à épingler/éditer/supprimer/réagir, qui désignent un
+ * message commun). Les DM relay portent déjà leur ID dans l'enveloppe. */
+interface WirePayload {
+  id: string
+  body: string
+}
+
+function encodeWire(id: string, body: string): string {
+  return JSON.stringify({ id, body })
+}
+
+/** Décode le plaintext déchiffré ; tolère un ancien message en texte brut (ID local de repli). */
+function decodeWire(plain: string): WirePayload {
+  try {
+    const obj: unknown = JSON.parse(plain)
+    if (obj && typeof obj === 'object' && 'id' in obj && 'body' in obj) {
+      const w = obj as Record<string, unknown> // narrowing : champs vérifiés juste après.
+      if (typeof w.id === 'string' && typeof w.body === 'string') return { id: w.id, body: w.body }
+    }
+  } catch { /* plaintext legacy non-JSON → traité comme corps brut */ }
+  return { id: newId(), body: plain }
 }
 
 /** Drives one secure channel + persists per-peer history across sessions. */
@@ -38,8 +67,11 @@ export function useSecureSession(identity: Identity | null): SecureSession {
   const [localDrop, setLocalDrop] = useState('')
   const selfAddr = identity ? encodeAddress(identity.publicKey) : ''
   const [history, setHistory] = useState<History>(() => loadHistory(selfAddr))
+  const [peerTyping, setPeerTyping] = useState(false)
 
   const linkRef = useRef<PeerLink | null>(null)
+  const lastTypingSentRef = useRef(0)
+  const typingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const keysRef = useRef<SessionKeys | null>(null)
   const identityRef = useRef<Identity | null>(null)
   const peerRef = useRef('')
@@ -48,7 +80,10 @@ export function useSecureSession(identity: Identity | null): SecureSession {
 
   useEffect(() => {
     if (identity) { identityRef.current = identity; setPhase('idle') }
-    return () => linkRef.current?.close()
+    return () => {
+      linkRef.current?.close()
+      if (typingClearRef.current) clearTimeout(typingClearRef.current)
+    }
   }, [identity])
 
   const record = useCallback((msg: SecureMessage): void => {
@@ -56,21 +91,35 @@ export function useSecureSession(identity: Identity | null): SecureSession {
     setHistory((prev) => appendMessage(selfAddrRef.current, prev, peerRef.current, msg))
   }, [])
 
+  const clearTyping = useCallback((): void => {
+    if (typingClearRef.current) { clearTimeout(typingClearRef.current); typingClearRef.current = null }
+    setPeerTyping(false)
+  }, [])
+
   const handleIncoming = useCallback((raw: string): void => {
     if (!keysRef.current) return
     try {
-      const body = open(keysRef.current, raw)
-      record({ id: newId(), author: 'peer', body, at: Date.now(), cipherTag: raw.slice(-4).toUpperCase() })
+      const { id, body } = decodeWire(open(keysRef.current, raw))
+      clearTyping() // Le pair a envoyé un vrai message → il ne tape plus.
+      record({ id, author: 'peer', body, at: Date.now(), cipherTag: raw.slice(-4).toUpperCase() })
     } catch (err) { console.error('[session] decrypt failed', err) }
-  }, [record])
+  }, [record, clearTyping])
+
+  // Réception d'une trame de contrôle non chiffrée (ex: typing) : active + auto-clear renouvelé.
+  const handleControl = useCallback((frame: Record<string, unknown>): void => {
+    if (frame.c !== 'typing') return
+    setPeerTyping(true)
+    if (typingClearRef.current) clearTimeout(typingClearRef.current)
+    typingClearRef.current = setTimeout(() => setPeerTyping(false), TYPING_CLEAR_MS)
+  }, [])
 
   const handleState = useCallback((isOpen: boolean): void => setPhase(isOpen ? 'secure' : 'lost'), [])
 
   const link = useCallback((): PeerLink => {
-    const l = new PeerLink(handleState, handleIncoming)
+    const l = new PeerLink(handleState, handleIncoming, handleControl)
     linkRef.current = l
     return l
-  }, [handleState, handleIncoming])
+  }, [handleState, handleIncoming, handleControl])
 
   const bindPeer = useCallback(async (peerPub: Uint8Array, initiator: boolean): Promise<void> => {
     keysRef.current = await deriveSession(identityRef.current!, peerPub, initiator)
@@ -119,10 +168,20 @@ export function useSecureSession(identity: Identity | null): SecureSession {
 
   const sendMessage = useCallback((body: string): void => {
     if (!keysRef.current || !body.trim()) return
-    const { payload, tag } = seal(keysRef.current, body)
+    const id = newId()
+    const { payload, tag } = seal(keysRef.current, encodeWire(id, body))
     linkRef.current?.send(payload)
-    record({ id: newId(), author: 'self', body, at: Date.now(), cipherTag: tag })
+    record({ id, author: 'self', body, at: Date.now(), cipherTag: tag })
   }, [record])
+
+  // Signale au pair qu'on tape — no-op hors session sécurisée, throttlé à 1 envoi / 2s.
+  const notifyTyping = useCallback((): void => {
+    if (phase !== 'secure') return
+    const now = Date.now()
+    if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return
+    lastTypingSentRef.current = now
+    linkRef.current?.sendControl({ c: 'typing' })
+  }, [phase])
 
   const getMessages = useCallback((peer: string): SecureMessage[] => messagesFor(history, peer), [history])
 
@@ -141,5 +200,6 @@ export function useSecureSession(identity: Identity | null): SecureSession {
     appendExternal, localDrop,
     hostSession, joinSession, completeSession,
     beginOffer, respondToOffer, applyAnswer, sendMessage,
+    peerTyping, notifyTyping,
   }
 }

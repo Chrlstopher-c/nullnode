@@ -7,6 +7,7 @@ import type { TokenBucket } from "./limits";
 export interface SocketData {
   addr: string | null;
   bucket: TokenBucket;
+  state: "online" | "away";
 }
 
 type Socket = ServerWebSocket<SocketData>;
@@ -28,6 +29,28 @@ export class Registry {
 
   online(): string[] {
     return [...this.byAddress.keys()];
+  }
+
+  setState(addr: string, state: "online" | "away"): void {
+    const ws = this.byAddress.get(addr);
+    if (ws) ws.data.state = state;
+  }
+
+  awayList(): string[] {
+    const result: string[] = [];
+    for (const [addr, ws] of this.byAddress) {
+      if (ws.data.state === "away") result.push(addr);
+    }
+    return result;
+  }
+
+  count(): number {
+    return this.byAddress.size;
+  }
+
+  broadcastAll(message: ServerMessage): void {
+    const data = JSON.stringify(message);
+    for (const ws of this.byAddress.values()) ws.send(data);
   }
 
   send(addr: string, message: ServerMessage): boolean {

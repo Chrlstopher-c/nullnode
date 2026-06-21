@@ -17,7 +17,7 @@ const PRESENCE_COLOR: Record<string, string> = {
 export function ConversationList({ history, friends, unreadFor, onOpen }: Props): React.ReactElement {
   const peers = conversationPeers(history)
   if (peers.length === 0) {
-    return <span className="text-[11px]" style={{ color: 'var(--text-lo)' }}>no conversations yet — 💬 a peer to start.</span>
+    return <span className="text-[11px]" style={{ color: 'var(--text-lo)' }}>aucune conversation — démarre depuis un contact.</span>
   }
   return (
     <div className="flex flex-col gap-1 overflow-auto pr-1" style={{ maxHeight: '60vh' }}>
