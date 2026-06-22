@@ -9,6 +9,7 @@ import { DataCore } from './DataCore'
 import { ParticleField } from './ParticleField'
 import { DataStreams } from './DataStreams'
 import { ACCENT_THEMES } from '../settings/visual-config'
+import { supportsPostProcessing } from './webgl-support'
 import type { VisualConfig } from '../settings/visual-config'
 import type { ConnectionPhase } from '../shared/types'
 
@@ -82,6 +83,9 @@ export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): Rea
     pulseTime.current = performance.now()
   }, [pulseToken])
 
+  // Post-process seulement si le contexte fournit les float buffers (sinon crash WebKitGTK/NVIDIA).
+  const postFx = useMemo(() => supportsPostProcessing(), [])
+
   return (
     <Canvas camera={{ position: [0, 0, 6.5], fov: 52 }} dpr={[1, 2]} gl={{ antialias: true }}>
       <color attach="background" args={['#040506']} />
@@ -90,13 +94,17 @@ export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): Rea
       <ParticleField density={visual.particleDensity} accentColor={accentColor} dimColor={dimColor} />
       <DataStreams nodes={nodes} connected={connected} secure={secure} accentColor={accentColor} dimColor={dimColor} />
       <Rig />
-      <BloomDriver active={active} bloomRef={bloomRef} pulseTime={pulseTime} />
-      <EffectComposer>
-        <Bloom ref={bloomRef} intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
-        <ChromaticAberration offset={offset} radialModulation modulationOffset={0.4} />
-        <Vignette eskil={false} offset={0.28} darkness={0.92} />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={visual.grain} />
-      </EffectComposer>
+      {postFx && (
+        <>
+          <BloomDriver active={active} bloomRef={bloomRef} pulseTime={pulseTime} />
+          <EffectComposer>
+            <Bloom ref={bloomRef} intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
+            <ChromaticAberration offset={offset} radialModulation modulationOffset={0.4} />
+            <Vignette eskil={false} offset={0.28} darkness={0.92} />
+            <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={visual.grain} />
+          </EffectComposer>
+        </>
+      )}
     </Canvas>
   )
 }

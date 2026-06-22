@@ -1,5 +1,6 @@
 import { AuthGate } from './auth/AuthGate'
 import { NetworkScene } from './visualizer/NetworkScene'
+import { SceneBoundary } from './visualizer/SceneBoundary'
 import { SessionApp } from './SessionApp'
 import { useIdentity } from './identity/use-identity'
 import { useRelaySetting } from './settings/use-relay-setting'
@@ -15,7 +16,9 @@ export function App(): React.ReactElement {
       <div className="grid-backdrop absolute inset-0 opacity-60" />
       {identity.status !== 'ready' ? (
         <>
-          <div className="absolute inset-0"><NetworkScene phase="idle" visual={visual.visual} /></div>
+          <div className="absolute inset-0">
+            <SceneBoundary><NetworkScene phase="idle" visual={visual.visual} /></SceneBoundary>
+          </div>
           {(identity.status === 'anon' || identity.status === 'locked') && <AuthGate identity={identity} />}
         </>
       ) : (

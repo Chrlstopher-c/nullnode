@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { BootSequence } from './boot/BootSequence'
 import { NetworkScene } from './visualizer/NetworkScene'
+import { SceneBoundary } from './visualizer/SceneBoundary'
 import { HudOverlay } from './hud/HudOverlay'
 import { AppShell } from './shell/AppShell'
 import { useUnread } from './comms/use-unread'
@@ -78,7 +79,9 @@ export function SessionApp({ identity, relay, visual }: Props): React.ReactEleme
   return (
     <>
       <div className="absolute inset-0">
-        <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
+        <SceneBoundary>
+          <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
+        </SceneBoundary>
       </div>
 
       <HudOverlay
