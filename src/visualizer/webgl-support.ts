@@ -16,3 +16,31 @@ export function supportsPostProcessing(): boolean {
     return false
   }
 }
+
+const SOFTWARE_MARKERS = ['llvmpipe', 'swiftshader', 'software', 'softpipe', 'microsoft basic']
+
+let acceleratedCache: boolean | null = null
+
+/** Vrai si WebGL est accéléré matériellement. WebKitGTK/NVIDIA sous XWayland avec DMABUF désactivé
+ * retombe sur llvmpipe (rendu logiciel) → la scène 3D rame à ~2fps : on préfère alors ne pas monter
+ * le Canvas et garder le fond CSS fluide. Détection mémoïsée (renderer string via debug_renderer_info). */
+export function hasAcceleratedWebGL(): boolean {
+  if (acceleratedCache !== null) return acceleratedCache
+  try {
+    const canvas = document.createElement('canvas')
+    const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as WebGLRenderingContext | null
+    if (!gl) { acceleratedCache = false; return false }
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = info
+      ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)).toLowerCase()
+      : ''
+    canvas.remove()
+    // renderer vide = pas d'info exposée : on tolère (navigateurs durcis) plutôt que de tout couper.
+    acceleratedCache = renderer === '' || !SOFTWARE_MARKERS.some((m) => renderer.includes(m))
+    return acceleratedCache
+  } catch (err) {
+    console.error('[visualizer] détection accélération WebGL échouée — scène 3D désactivée', err)
+    acceleratedCache = false
+    return false
+  }
+}

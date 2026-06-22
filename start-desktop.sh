@@ -19,17 +19,18 @@ fi
 
 : > "$LOG_FILE"
 
-# WebKitGTK + Wayland : galère connue (NVIDIA surtout).
-#  - "Gdk Error 71 (Protocol error)" → désactiver le renderer DMABUF.
-#  - "Failed to create GBM buffer / page blanche" → le path GPU Wayland natif échoue sur NVIDIA ;
-#    XWayland (GLX) est fiable ET garde l'accélération GPU (≠ désactiver le compositing, qui
-#    tuerait le WebGL). On force x11 uniquement si GPU NVIDIA détecté ; autres GPU = Wayland natif.
+# WebKitGTK + NVIDIA : l'accélération GPU via le renderer DMABUF est inatteignable ici — quel que
+# soit le tuning (XWayland, GBM_BACKEND=nvidia-drm, FORCE_COMPOSITING), l'allocation de buffer GBM
+# échoue ("Failed to create GBM buffer") → écran blanc/noir. Le seul état stable est DMABUF désactivé
+# (copie logicielle). La scène 3D n'est alors pas montée (probe FPS côté app) ; fond CSS statique.
+# XWayland (GDK_BACKEND=x11) reste le plus fiable sur NVIDIA pour éviter "Gdk Error 71".
 if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
   export WEBKIT_DISABLE_DMABUF_RENDERER=1
-  if lspci 2>/dev/null | grep -qi 'nvidia'; then
-    export GDK_BACKEND=x11
-  fi
+  GPU_LIST="$(lspci 2>/dev/null || true)"
+  [[ "$GPU_LIST" == *NVIDIA* ]] && export GDK_BACKEND=x11
 fi
+
+echo "[gpu-env] GDK_BACKEND=${GDK_BACKEND:-unset} DMABUF_DISABLE=${WEBKIT_DISABLE_DMABUF_RENDERER:-unset}"
 
 # setsid : nouveau groupe de process → stop-desktop.sh tue tout l'arbre (vite + cargo + webview).
 setsid bun run tauri:dev > "$LOG_FILE" 2>&1 &

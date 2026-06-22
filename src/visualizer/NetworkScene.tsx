@@ -87,8 +87,7 @@ export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): Rea
   const postFx = useMemo(() => supportsPostProcessing(), [])
 
   return (
-    <Canvas camera={{ position: [0, 0, 6.5], fov: 52 }} dpr={[1, 2]} gl={{ antialias: true }}>
-      <color attach="background" args={['#040506']} />
+    <Canvas camera={{ position: [0, 0, 6.5], fov: 52 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
       <fog attach="fog" args={['#040506', 7, 18]} />
       <DataCore active={active} accentColor={accentColor} />
       <ParticleField density={visual.particleDensity} accentColor={accentColor} dimColor={dimColor} />

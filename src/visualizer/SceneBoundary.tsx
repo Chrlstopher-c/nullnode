@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { AmbientBackground } from './AmbientBackground'
 
 interface Props {
   children: ReactNode
@@ -23,7 +24,7 @@ export class SceneBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.crashed) {
-      return <div className="grid-backdrop absolute inset-0 opacity-60" style={{ background: 'var(--void)' }} />
+      return <AmbientBackground />
     }
     return this.props.children
   }

@@ -53,6 +53,17 @@ body,
   text-shadow: 0 0 12px var(--accent-glow);
 }
 
+/* fond ambiant statique sans GPU : deux lueurs phosphor figées (haut + bas) pour la profondeur.
+ * Aucune animation, aucun blend-mode → composé une seule fois, fluide même en rendu logiciel
+ * (WebKitGTK/NVIDIA software). Base permanente + fallback quand la scène WebGL n'est pas montée. */
+.ambient-static {
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 65% 50% at 50% 8%, var(--accent-glow) 0%, transparent 60%),
+    radial-gradient(ellipse 85% 60% at 50% 112%, var(--accent-glow) 0%, transparent 65%);
+  opacity: 0.35;
+}
+
 @keyframes pulse-node {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }

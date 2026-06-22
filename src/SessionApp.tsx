@@ -22,12 +22,13 @@ interface Props {
   identity: IdentityState
   relay: RelaySetting
   visual: VisualSetting
+  scene3d: boolean
 }
 
 /** Application authentifiée : montée uniquement quand l'identité est prête, donc avec
  * une adresse garantie. Les hooks par-compte chargent ainsi leur partition de façon
  * synchrone (aucune ré-hydratation différée, aucune fuite inter-comptes). */
-export function SessionApp({ identity, relay, visual }: Props): React.ReactElement {
+export function SessionApp({ identity, relay, visual, scene3d }: Props): React.ReactElement {
   const [booted, setBooted] = useState(false)
   const [chatPeer, setChatPeer] = useState<string | null>(null)
 
@@ -78,11 +79,13 @@ export function SessionApp({ identity, relay, visual }: Props): React.ReactEleme
 
   return (
     <>
-      <div className="absolute inset-0">
-        <SceneBoundary>
-          <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
-        </SceneBoundary>
-      </div>
+      {scene3d && (
+        <div className="absolute inset-0">
+          <SceneBoundary>
+            <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
+          </SceneBoundary>
+        </div>
+      )}
 
       <HudOverlay
         selfFingerprint={identity.identity?.fingerprint ?? ''}
