@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Lance l'app desktop native (Tauri dev) : fenêtre WebView + daemon ghost/tray + hot-reload.
-# Vite (:5180) est lancé automatiquement par beforeDevCommand. Relay = Pi par défaut.
-# Override dev local : VITE_RELAY_URL=ws://127.0.0.1:8791 ./start-desktop.sh
+# beforeDevCommand (dev:tauri) lève le relay LOCAL + Vite (:5180) → marche out-of-the-box,
+# sans dépendre d'un node externe. Le Pi reste joignable en 1 clic via les presets/settings.
+# Override explicite : VITE_RELAY_URL=wss://... ./start-desktop.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -23,5 +24,5 @@ setsid bun run tauri:dev > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 
 echo "desktop started (pgid $(cat "$PID_FILE")) — logs: $LOG_FILE"
-echo "relay  ${VITE_RELAY_URL:-wss://relai.exemple (défaut Pi)}"
+echo "relay  ${VITE_RELAY_URL:-ws://127.0.0.1:8791 (local, défaut)}"
 echo "1re compilation Rust : quelques minutes. La fenêtre s'ouvrira ensuite."

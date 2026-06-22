@@ -14,6 +14,9 @@ else
   echo "no pid file — fallback kill"
 fi
 
+# Le relay local est levé par beforeDevCommand (en background) → l'arrêter explicitement.
+./relay/stop.sh 2>/dev/null || true
+
 # Filet de sécurité : restes éventuels (binaire daemon, vite du beforeDevCommand).
 pkill -f "nullnode-daemon" 2>/dev/null || true
 pkill -f "tauri dev" 2>/dev/null || true
