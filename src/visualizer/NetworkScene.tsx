@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { EffectComposer, Bloom, ChromaticAberration, Vignette, Noise } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
+import type { BloomEffect } from 'postprocessing'
 import * as THREE from 'three'
 import { buildNodePositions } from './network-core'
 import { DataCore } from './DataCore'
@@ -14,6 +15,14 @@ import type { ConnectionPhase } from '../shared/types'
 const NODE_COUNT = 26
 const CONNECTED_COUNT = 11
 const RADIUS = 3.0
+const PULSE_MS = 1400
+const PULSE_GAIN = 1.3
+
+interface SceneProps {
+  phase: ConnectionPhase
+  visual: VisualConfig
+  pulseToken?: number
+}
 
 /** Slow cinematic dolly + bob around the core. */
 function Rig(): React.ReactElement {
@@ -27,7 +36,24 @@ function Rig(): React.ReactElement {
   return <></>
 }
 
-export function NetworkScene({ phase, visual }: { phase: ConnectionPhase; visual: VisualConfig }): React.ReactElement {
+/** Bloom dont l'intensité monte en pic puis décroît à chaque impulsion (message reçu / connexion). */
+function ReactiveBloom({ active, pulseTime }: { active: boolean; pulseTime: React.RefObject<number> }): React.ReactElement {
+  const ref = useRef<BloomEffect | null>(null)
+  const activeRef = useRef(active)
+  activeRef.current = active
+
+  useFrame(() => {
+    const eff = ref.current
+    if (!eff) return
+    const base = activeRef.current ? 1.12 : 0.95
+    const energy = Math.max(0, 1 - (performance.now() - pulseTime.current) / PULSE_MS)
+    eff.intensity = base + energy * energy * PULSE_GAIN // ease-out quadratique sur le decay.
+  })
+
+  return <Bloom ref={ref} intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
+}
+
+export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): React.ReactElement {
   const nodes = useMemo(() => buildNodePositions(NODE_COUNT, RADIUS), [])
   const connected = useMemo(() => nodes.slice(0, CONNECTED_COUNT), [nodes])
   const active = phase === 'secure' || phase === 'handshaking'
@@ -41,6 +67,14 @@ export function NetworkScene({ phase, visual }: { phase: ConnectionPhase; visual
     [visual.aberration],
   )
 
+  // Impulsion de luminescence : bump du timestamp à chaque nouvel événement, sauf au montage.
+  const pulseTime = useRef(0)
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    pulseTime.current = performance.now()
+  }, [pulseToken])
+
   return (
     <Canvas camera={{ position: [0, 0, 6.5], fov: 52 }} dpr={[1, 2]} gl={{ antialias: true }}>
       <color attach="background" args={['#040506']} />
@@ -50,7 +84,7 @@ export function NetworkScene({ phase, visual }: { phase: ConnectionPhase; visual
       <DataStreams nodes={nodes} connected={connected} secure={secure} accentColor={accentColor} dimColor={dimColor} />
       <Rig />
       <EffectComposer>
-        <Bloom intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
+        <ReactiveBloom active={active} pulseTime={pulseTime} />
         <ChromaticAberration offset={offset} radialModulation modulationOffset={0.4} />
         <Vignette eskil={false} offset={0.28} darkness={0.92} />
         <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={visual.grain} />

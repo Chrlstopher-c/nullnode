@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { BootSequence } from './boot/BootSequence'
 import { NetworkScene } from './visualizer/NetworkScene'
@@ -68,10 +68,17 @@ export function SessionApp({ identity, relay, visual }: Props): React.ReactEleme
 
   const incomingPeer = session.connectedPeers.find((p) => p !== chatPeer) ?? null
 
+  // Pilote la luminescence du background : change à chaque message reçu ou connexion établie.
+  const pulseToken = useMemo(() => {
+    const peerMessages = Object.values(session.history)
+      .reduce((n, msgs) => n + msgs.filter((m) => m.author === 'peer').length, 0)
+    return peerMessages + session.connectedPeers.length
+  }, [session.history, session.connectedPeers])
+
   return (
     <>
       <div className="absolute inset-0">
-        <NetworkScene phase={session.aggregatePhase} visual={visual.visual} />
+        <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
       </div>
 
       <HudOverlay

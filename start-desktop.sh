@@ -19,11 +19,16 @@ fi
 
 : > "$LOG_FILE"
 
-# WebKitGTK + Wayland (surtout NVIDIA) → "Gdk Error 71 (Protocol error)". Désactiver le renderer
-# DMABUF corrige le crash en gardant l'accélération GPU (nécessaire à la scène WebGL).
-# Si l'erreur persiste malgré ça : forcer XWayland → `export GDK_BACKEND=x11`.
+# WebKitGTK + Wayland : galère connue (NVIDIA surtout).
+#  - "Gdk Error 71 (Protocol error)" → désactiver le renderer DMABUF.
+#  - "Failed to create GBM buffer / page blanche" → le path GPU Wayland natif échoue sur NVIDIA ;
+#    XWayland (GLX) est fiable ET garde l'accélération GPU (≠ désactiver le compositing, qui
+#    tuerait le WebGL). On force x11 uniquement si GPU NVIDIA détecté ; autres GPU = Wayland natif.
 if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
   export WEBKIT_DISABLE_DMABUF_RENDERER=1
+  if lspci 2>/dev/null | grep -qi 'nvidia'; then
+    export GDK_BACKEND=x11
+  fi
 fi
 
 # setsid : nouveau groupe de process → stop-desktop.sh tue tout l'arbre (vite + cargo + webview).
