@@ -47,11 +47,13 @@ relai puisse lire quoi que ce soit. Couvre le cas « seul connecté → nouvel a
       Input messagerie débloqué offline (libellé « delivered when online », statut RELAY).
 - [ ] **À VALIDER MAIN (P0)** : A online + B offline → A envoie → B se connecte → B reçoit.
 
-## P1 — MULTI-CONVERSATION SIMULTANÉE
-- [ ] Aujourd'hui mono-session : une seule connexion WebRTC active (`use-secure-session`).
-      Refactor pour N PeerLink simultanés (Map<peerAddress, PeerLink/SessionKeys>), afin d'avoir
-      plusieurs conversations ouvertes en parallèle. Gros refactor de `use-secure-session.ts`.
-      Préalable propre avant l'UI nodes (sinon ouvrir une conv coupe l'autre).
+## P1 — MULTI-CONVERSATION SIMULTANÉE — ✅ LIVRÉ (2026-06-22)
+- [x] `use-secure-session` réécrit : `Map<peer, PeerRuntime>` (links/keys/timers, ref) +
+      vues réactives `Record<peer, PeerView>`. Interface par-pair : `phaseFor`/`fingerprintFor`/
+      `typingFor`/`isSecure`/`sasFor` + `connectedPeers`/`aggregatePhase` ; `sendMessage(peer,…)`,
+      `notifyTyping(peer)`, `applyAnswer(peerPub,…)`. `src/session/peer-session.ts` (runtime/view).
+      Typing throttle + auto-clear PAR PAIR. Dead-drop manuel + `ConnectPanel.tsx` supprimés.
+- [ ] **À VALIDER MAIN (P0)** : 3 fenêtres → 2 conversations ouvertes simultanément sans coupure.
 
 ---
 
@@ -67,19 +69,31 @@ vit en 2D par-dessus (cartes NetworkPanel + CommsConsole). Domaine `navigator/` 
 - [x] **Seed chiffrée au repos** ✅ (2026-06-21) : vault PIN `crypto_pwhash` (Argon2) + `secretbox`
       (`src/identity/vault/seed-vault.ts`), états anon/locked/ready, migration des comptes en clair.
 - [x] **TTL / purge + bornes relai** ✅ (2026-06-21) : `relay/src/limits.ts` (TTL, caps, rate-limit).
-- [ ] **SAS / anti-MITM** (différé, prévu après l'UI) : code court dérivé des 2 clés de session,
-      comparé de vive voix, pilote le flag `verified` du roster.
-- [ ] Fallback dead-drop si relai down (UI : exposer ConnectPanel quand RELAY DOWN).
-- [ ] STUN optionnel pour le WAN (aujourd'hui LAN/localhost only). Garder LAN par défaut.
-- [ ] Statut `away` (inactivité) en plus de online/offline.
+- [x] **SAS / anti-MITM** ✅ (2026-06-22) : `src/crypto/sas.ts` (`deriveSas` = 4 mots des clés
+      de session triées par octets → identique des 2 côtés, indépendant du rôle). `sasFor(peer)`
+      sur la session ; `setVerified` au roster ; `VerifyControl`/`SasPanel` dans MessageStream
+      (IDENTIQUE→verified / DIFFÉRENT→alerte) ; badge `ShieldCheck` (MessageStream + FriendsList).
+      À VALIDER MAIN (P0) : 2 fenêtres → même code SAS des 2 côtés → badge bouclier.
+- [x] Statut `away` (inactivité) ✅ (2026-06-22) : `src/presence/use-idle.ts` (events DOM +
+      visibilitychange, refs only), 3 min → `setPresence('away')`, retour → `online`. Câblé SessionApp.
+- [~] ~~Fallback dead-drop si relai down~~ — **ABANDONNÉ (2026-06-22, Chris)** : le node Pi H24
+      est le point de rendez-vous assumé. Pas de réintroduction de l'échange SDP manuel. (Code
+      retiré récupérable dans l'historique git si la décision change un jour.)
+- [~] STUN WAN — **REPORTÉ (2026-06-22)** : pas de STUN public (souveraineté + fuite IP). Le
+      store-and-forward via le relay couvre déjà l'échec du P2P direct (messages chiffrés relayés).
+      Si temps-réel direct WAN un jour nécessaire → **coturn self-hosted sur le Pi** (souverain).
 - [ ] **Mesh peer-relay** (différé, à cadrer) : réserve technique — fuite de métadonnées,
       modèle de confiance à décider, fallback only.
 
 ## P3 — PACKAGING & POLISH
 - [x] **Daemon desktop Tauri 2** ✅ (2026-06-21) : scaffold `src-tauri/`, ghost + tray + handoff.
       Reste `tauri build` (AppImage/deb) à produire/valider sur machine.
-- [ ] Réglages visuels : densité particules, intensité grain/aberration, thème accent alt (ambre).
-- [ ] start.sh racine qui lance relai + app ensemble.
+- [x] **Réglages visuels** ✅ (2026-06-22) : `settings/visual-config.ts` + `use-visual-setting.ts`
+      + `VisualSettingsPanel` (sliders densité/grain/aberration + toggle accent phosphor/ambre,
+      persisté `nullnode.visual`). Couleur accent + density + grain + aberration propagés au WebGL
+      par props (fallback constantes). Hook hissé dans App.tsx → thème dès le boot. Rendu à valider à l'œil.
+- [x] **start.sh racine relai + app** ✅ (2026-06-22) : lance relay local puis l'app
+      (`VITE_RELAY_URL=ws://127.0.0.1:8791`) ; `stop.sh` arrête les deux.
 
 ---
 
