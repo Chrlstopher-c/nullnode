@@ -13,6 +13,7 @@ src/
   crypto/
     identity.ts                 ensureReady + fingerprint (libsodium-sumo)
     encryption.ts               Session KX + scellage ChaCha20-Poly1305 (seal/open)
+    sas.ts                      Short Authentication String anti-MITM (4 mots, symétrique)
   identity/
     address.ts                  Adresse NULLNODE + callsign + handle PSEUDO#disc
     seed.ts                     Dérivation identité depuis seed BIP39
@@ -28,9 +29,8 @@ src/
     PinStep.tsx                 Saisie + confirmation du PIN
   roster/
     types.ts                    Friend, FriendRequest, Presence
-    use-roster.ts               Carnet d'amis cloisonné par compte (CRUD, présence, heal)
-    NetworkPanel.tsx            Colonne réseau : identité + requests + amis + settings
-    AddFriend.tsx / FriendsList.tsx / FriendRequests.tsx
+    use-roster.ts               Carnet d'amis cloisonné par compte (CRUD, présence, verified, heal)
+    AddFriend.tsx / FriendsList.tsx / FriendRequests.tsx   (FriendsList : badge vérifié)
   rendezvous/
     rendezvous-client.ts        Client WS du relai (hello, signal, relay/ack, backup)
     sealed-signal.ts            Scellage des signaux (crypto_box_seal)
@@ -38,9 +38,11 @@ src/
     use-rendezvous.ts           Présence, friend-requests, sendDM, backup pull/push
   session/
     history.ts                  Historique par pair, cloisonné par compte
-    use-secure-session.ts       Orchestrateur : identité + transport + crypto + messages
+    peer-session.ts             Types runtime/vue d'une session par pair (Map multi-session)
+    use-secure-session.ts       N sessions WebRTC simultanées (Map<peer>), API par-pair + SAS
+  presence/
+    use-idle.ts                 Détection d'inactivité (events DOM) → auto-away/online
   transport/
-    dead-drop.ts                Encode/décode des codes SDP copiables (fallback)
     peer-link.ts                Lien WebRTC P2P (no STUN, LAN/localhost)
   backup/
     backup-crypto.ts            seal/open du blob (clé dérivée seed)

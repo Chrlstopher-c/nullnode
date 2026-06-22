@@ -36,21 +36,27 @@ function Rig(): React.ReactElement {
   return <></>
 }
 
-/** Bloom dont l'intensité monte en pic puis décroît à chaque impulsion (message reçu / connexion). */
-function ReactiveBloom({ active, pulseTime }: { active: boolean; pulseTime: React.RefObject<number> }): React.ReactElement {
-  const ref = useRef<BloomEffect | null>(null)
+interface BloomDriverProps {
+  active: boolean
+  bloomRef: React.RefObject<BloomEffect | null>
+  pulseTime: React.RefObject<number>
+}
+
+/** Module l'intensité du Bloom via sa ref : pic puis decay à chaque impulsion (message/connexion).
+ * Composant frère (hors EffectComposer, qui n'accepte que des primitives d'effet en enfants). */
+function BloomDriver({ active, bloomRef, pulseTime }: BloomDriverProps): null {
   const activeRef = useRef(active)
   activeRef.current = active
 
   useFrame(() => {
-    const eff = ref.current
+    const eff = bloomRef.current
     if (!eff) return
     const base = activeRef.current ? 1.12 : 0.95
     const energy = Math.max(0, 1 - (performance.now() - pulseTime.current) / PULSE_MS)
     eff.intensity = base + energy * energy * PULSE_GAIN // ease-out quadratique sur le decay.
   })
 
-  return <Bloom ref={ref} intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
+  return null
 }
 
 export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): React.ReactElement {
@@ -70,6 +76,7 @@ export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): Rea
   // Impulsion de luminescence : bump du timestamp à chaque nouvel événement, sauf au montage.
   const pulseTime = useRef(0)
   const mounted = useRef(false)
+  const bloomRef = useRef<BloomEffect | null>(null)
   useEffect(() => {
     if (!mounted.current) { mounted.current = true; return }
     pulseTime.current = performance.now()
@@ -83,8 +90,9 @@ export function NetworkScene({ phase, visual, pulseToken = 0 }: SceneProps): Rea
       <ParticleField density={visual.particleDensity} accentColor={accentColor} dimColor={dimColor} />
       <DataStreams nodes={nodes} connected={connected} secure={secure} accentColor={accentColor} dimColor={dimColor} />
       <Rig />
+      <BloomDriver active={active} bloomRef={bloomRef} pulseTime={pulseTime} />
       <EffectComposer>
-        <ReactiveBloom active={active} pulseTime={pulseTime} />
+        <Bloom ref={bloomRef} intensity={active ? 1.12 : 0.95} luminanceThreshold={0.08} luminanceSmoothing={0.3} mipmapBlur />
         <ChromaticAberration offset={offset} radialModulation modulationOffset={0.4} />
         <Vignette eskil={false} offset={0.28} darkness={0.92} />
         <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={visual.grain} />
