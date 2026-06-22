@@ -4,19 +4,24 @@ import { IdentityCard } from '../identity/IdentityCard'
 import { RecoveryPanel } from '../identity/RecoveryPanel'
 import { BackupPanel } from '../backup/BackupPanel'
 import { SettingsPanel } from '../settings/SettingsPanel'
+import { VisualSettingsPanel } from '../settings/VisualSettingsPanel'
 import type { IdentityState } from '../identity/use-identity'
 import type { RelaySetting } from '../settings/use-relay-setting'
+import type { VisualSetting } from '../settings/use-visual-setting'
 
 interface DrawerProps {
   identity: IdentityState
   relay: RelaySetting
+  visual: VisualSetting
   relayOnline: boolean
   open: boolean
   onClose: () => void
 }
 
-/** Drawer latéral : identité, récupération seed, backup souverain, réglage relai. */
-export function ProfileDrawer({ identity, relay, relayOnline, open, onClose }: DrawerProps): React.ReactElement {
+/** Drawer latéral : identité, récupération seed, backup souverain, réglage relai, réglages visuels. */
+export function ProfileDrawer(
+  { identity, relay, visual, relayOnline, open, onClose }: DrawerProps,
+): React.ReactElement {
   return (
     <AnimatePresence>
       {open && (
@@ -39,6 +44,7 @@ export function ProfileDrawer({ identity, relay, relayOnline, open, onClose }: D
             <RecoveryPanel identity={identity} />
             <BackupPanel mnemonic={identity.mnemonic} selfAddr={identity.address} />
             <SettingsPanel relay={relay} relayOnline={relayOnline} />
+            <VisualSettingsPanel setting={visual} />
           </motion.aside>
         </>
       )}

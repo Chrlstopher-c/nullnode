@@ -5,6 +5,7 @@ import { ProfileDrawer } from './ProfileDrawer'
 import { useLayout } from './use-layout'
 import type { IdentityState } from '../identity/use-identity'
 import type { RelaySetting } from '../settings/use-relay-setting'
+import type { VisualSetting } from '../settings/use-visual-setting'
 import type { RosterState } from '../roster/use-roster'
 import type { SecureSession } from '../session/use-secure-session'
 import type { UnreadState } from '../comms/use-unread'
@@ -13,6 +14,7 @@ import type { FriendRequest } from '../roster/types'
 interface AppShellProps {
   identity: IdentityState
   relay: RelaySetting
+  visual: VisualSetting
   roster: RosterState
   session: SecureSession
   unread: UnreadState
@@ -68,7 +70,7 @@ export function AppShell(props: AppShellProps): React.ReactElement {
       />
 
       <ProfileDrawer
-        identity={identity} relay={relay} relayOnline={relayOnline}
+        identity={identity} relay={relay} visual={props.visual} relayOnline={relayOnline}
         open={layout.profileOpen} onClose={() => layout.setProfileOpen(false)}
       />
     </div>

@@ -1,11 +1,16 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ACCENT } from './network-core'
 import { CORE_FRAGMENT, CORE_VERTEX } from './shaders'
 
+interface Props {
+  active: boolean
+  accentColor?: THREE.Color
+}
+
 /** Volumetric data-sphere: noise-displaced surface with a fresnel rim glow. */
-export function DataCore({ active }: { active: boolean }): React.ReactElement {
+export function DataCore({ active, accentColor = ACCENT }: Props): React.ReactElement {
   const groupRef = useRef<THREE.Group>(null)
 
   const material = useMemo(
@@ -14,7 +19,7 @@ export function DataCore({ active }: { active: boolean }): React.ReactElement {
         uniforms: {
           uTime: { value: 0 },
           uActive: { value: 0 },
-          uColor: { value: ACCENT.clone() },
+          uColor: { value: accentColor.clone() },
         },
         vertexShader: CORE_VERTEX,
         fragmentShader: CORE_FRAGMENT,
@@ -22,8 +27,14 @@ export function DataCore({ active }: { active: boolean }): React.ReactElement {
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
+
+  useEffect(() => {
+    // uColor est typé IUniform (value: unknown) ; on l'a initialisé en THREE.Color juste au-dessus.
+    ;(material.uniforms.uColor.value as THREE.Color).copy(accentColor)
+  }, [material, accentColor])
 
   useFrame((_, dt) => {
     material.uniforms.uTime.value += dt

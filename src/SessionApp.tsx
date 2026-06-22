@@ -11,6 +11,7 @@ import { useSecureSession } from './session/use-secure-session'
 import { useRendezvous } from './rendezvous/use-rendezvous'
 import { useDesktopPresence } from './desktop/use-desktop-presence'
 import { useIdle } from './presence/use-idle'
+import type { VisualSetting } from './settings/use-visual-setting'
 import type { IdentityState } from './identity/use-identity'
 import type { RelaySetting } from './settings/use-relay-setting'
 
@@ -19,12 +20,13 @@ const IDLE_MS = 3 * 60 * 1000
 interface Props {
   identity: IdentityState
   relay: RelaySetting
+  visual: VisualSetting
 }
 
 /** Application authentifiée : montée uniquement quand l'identité est prête, donc avec
  * une adresse garantie. Les hooks par-compte chargent ainsi leur partition de façon
  * synchrone (aucune ré-hydratation différée, aucune fuite inter-comptes). */
-export function SessionApp({ identity, relay }: Props): React.ReactElement {
+export function SessionApp({ identity, relay, visual }: Props): React.ReactElement {
   const [booted, setBooted] = useState(false)
   const [chatPeer, setChatPeer] = useState<string | null>(null)
 
@@ -69,7 +71,7 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
   return (
     <>
       <div className="absolute inset-0">
-        <NetworkScene phase={session.aggregatePhase} />
+        <NetworkScene phase={session.aggregatePhase} visual={visual.visual} />
       </div>
 
       <HudOverlay
@@ -81,6 +83,7 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
       <AppShell
         identity={identity}
         relay={relay}
+        visual={visual}
         roster={roster}
         session={session}
         unread={unread}

@@ -55,13 +55,23 @@ function ParticleLayer({ count, rMin, rMax, size, spin, color = ACCENT }: LayerP
   )
 }
 
+interface FieldProps {
+  density: number
+  accentColor?: THREE.Color
+  dimColor?: THREE.Color
+}
+
+const MID_COLOR = new THREE.Color('#0b9e68')
+const FAR_COLOR = new THREE.Color('#16312a')
+
 /** Layered particle atmosphere: inner dust shell + drifting mid field + distant stars. */
-export function ParticleField(): React.ReactElement {
+export function ParticleField({ density, accentColor = ACCENT }: FieldProps): React.ReactElement {
+  const scaled = (count: number): number => Math.round(count * density)
   return (
     <>
-      <ParticleLayer count={2200} rMin={1.6} rMax={4.2} size={90} spin={0.06} />
-      <ParticleLayer count={1400} rMin={4.5} rMax={8} size={60} spin={-0.025} color={new THREE.Color('#0b9e68')} />
-      <ParticleLayer count={1200} rMin={9} rMax={16} size={40} spin={0.01} color={new THREE.Color('#16312a')} />
+      <ParticleLayer count={scaled(2200)} rMin={1.6} rMax={4.2} size={90} spin={0.06} color={accentColor} />
+      <ParticleLayer count={scaled(1400)} rMin={4.5} rMax={8} size={60} spin={-0.025} color={MID_COLOR} />
+      <ParticleLayer count={scaled(1200)} rMin={9} rMax={16} size={40} spin={0.01} color={FAR_COLOR} />
     </>
   )
 }
