@@ -52,24 +52,22 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
     unread.markSeen(address)
     setChatPeer(address)
     const friend = roster.friends.find((f) => f.address === address)
-    const connectedHere = session.phase === 'secure' && session.peerAddress === address
+    const connectedHere = session.isSecure(address)
     if (friend && friend.presence === 'online' && !connectedHere) void rendezvous.connectTo(friend)
-  }, [roster.friends, session.phase, session.peerAddress, rendezvous, unread])
+  }, [roster.friends, session, rendezvous, unread])
 
-  const incomingPeer =
-    session.phase === 'secure' && session.peerAddress && session.peerAddress !== chatPeer
-      ? session.peerAddress : null
+  const incomingPeer = session.connectedPeers.find((p) => p !== chatPeer) ?? null
 
   return (
     <>
       <div className="absolute inset-0">
-        <NetworkScene phase={session.phase} />
+        <NetworkScene phase={session.aggregatePhase} />
       </div>
 
       <HudOverlay
         selfFingerprint={identity.identity?.fingerprint ?? ''}
-        peerFingerprint={session.peerFingerprint}
-        phase={session.phase}
+        peerFingerprint={chatPeer ? session.fingerprintFor(chatPeer) : ''}
+        phase={session.aggregatePhase}
       />
 
       <AppShell

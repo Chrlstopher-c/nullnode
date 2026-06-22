@@ -37,7 +37,7 @@ async function routeSignal(
       const answer = await session.respondToOffer(peerPub, body.sdp)
       client.signal(from, sealSignal({ kind: 'answer', sdp: answer }, peerPub))
     } else {
-      await session.applyAnswer(body.sdp)
+      await session.applyAnswer(peerPub, body.sdp)
     }
   } catch (err) { console.error('[rendezvous] signal failed', err) }
 }
@@ -164,8 +164,8 @@ export function useRendezvous(args: Args): RendezvousState {
     const { session: s, address: self } = live.current
     const text = body.trim()
     if (!text) return
-    const liveChannel = s.phase === 'secure' && s.peerAddress === peer
-    if (liveChannel) { s.sendMessage(text); return }
+    const liveChannel = s.isSecure(peer)
+    if (liveChannel) { s.sendMessage(peer, text); return }
     const id = shortId()
     s.appendExternal(peer, { id, author: 'self', body: text, at: Date.now(), cipherTag: '····' })
     try {

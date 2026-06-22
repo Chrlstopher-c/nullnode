@@ -98,17 +98,17 @@ export function MessageStream(props: Props): React.ReactElement {
   const endRef = useRef<HTMLDivElement>(null)
   const messages = session.messagesFor(peer)
   const peerName = resolvePeerHandle(peer, friends).split('#')[0]
-  const connected = session.phase === 'secure' && session.peerAddress === peer
+  const connected = session.isSecure(peer)
   const pinnedSet = new Set(pinnedIds)
   const pinnedMessages = messages.filter((m) => pinnedSet.has(m.id))
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length])
 
-  const showTyping = session.peerTyping && connected
+  const showTyping = session.typingFor(peer) && connected
   const submit = (): void => { onSend(peer, draft); setDraft('') }
   const onDraftChange = (value: string): void => {
     setDraft(value)
-    if (connected) session.notifyTyping()
+    if (connected) session.notifyTyping(peer)
   }
 
   return (
