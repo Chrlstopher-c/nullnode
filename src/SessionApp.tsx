@@ -42,6 +42,8 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
     rendezvous.sendPin(chatPeer, id, pinned)
   }, [chatPeer, pins, rendezvous])
 
+  const onVerify = useCallback((peer: string): void => roster.setVerified(peer, true), [roster])
+
   // Daemon desktop : présence relay tenue par le ghost quand la GUI est fermée (no-op hors Tauri).
   useDesktopPresence({ ready: identity.status === 'ready', address: identity.address, relayUrl: relay.relayUrl })
 
@@ -88,6 +90,7 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
         pinnedIds={chatPeer ? pins.pinnedIds(chatPeer) : []}
         onTogglePin={onTogglePin}
         onSend={rendezvous.sendDM}
+        onVerify={onVerify}
         onSendRequest={rendezvous.sendRequest}
         onAccept={rendezvous.acceptRequest}
         onDecline={rendezvous.declineRequest}

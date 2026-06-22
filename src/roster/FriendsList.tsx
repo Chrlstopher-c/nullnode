@@ -1,4 +1,4 @@
-import { MessageSquare, X } from 'lucide-react'
+import { MessageSquare, ShieldCheck, X } from 'lucide-react'
 import { callsign, discriminator } from '../identity/address'
 import sodium from 'libsodium-wrappers-sumo'
 import type { Friend, Presence } from './types'
@@ -39,7 +39,12 @@ export function FriendsList({ roster, onChat }: Props): React.ReactElement {
           >
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: PRESENCE_COLOR[f.presence] }} />
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-[12px]" style={{ color: 'var(--text-hi)' }}>{friendHandle(f)}</span>
+              <span className="flex items-center gap-1 truncate text-[12px]" style={{ color: 'var(--text-hi)' }}>
+                {friendHandle(f)}
+                {f.verified && (
+                  <span title="vérifié" style={{ color: 'var(--accent)' }}><ShieldCheck size={12} /></span>
+                )}
+              </span>
               <span className="text-[9px]" style={{ color: 'var(--text-lo)' }}>{f.presence}</span>
             </div>
             <button

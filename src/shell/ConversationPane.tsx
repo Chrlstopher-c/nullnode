@@ -17,6 +17,7 @@ interface PaneProps {
   onOpenChat: (peer: string) => void
   pinnedIds: string[]
   onTogglePin: (id: string) => void
+  onVerify: (peer: string) => void
 }
 
 /** Zone principale : conversation ouverte (MessageStream) ou état vide. */
@@ -45,6 +46,8 @@ export function ConversationPane(props: PaneProps): React.ReactElement {
             session={session} peer={chatPeer} friends={props.friends}
             selfPseudo={props.selfPseudo} onSend={props.onSend} onBack={props.onCloseChat}
             pinnedIds={props.pinnedIds} onTogglePin={props.onTogglePin}
+            verified={props.friends.find((f) => f.address === chatPeer)?.verified ?? false}
+            onVerify={() => props.onVerify(chatPeer)}
           />
         </div>
       )}

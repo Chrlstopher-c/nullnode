@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { deriveSession, open, seal } from '../crypto/encryption'
+import { deriveSas } from '../crypto/sas'
 import { PeerLink } from '../transport/peer-link'
 import { encodeAddress } from '../identity/address'
 import { appendMessage, loadHistory, messagesFor, type History } from './history'
@@ -17,6 +18,7 @@ export interface SecureSession {
   fingerprintFor: (peer: string) => string
   typingFor: (peer: string) => boolean
   isSecure: (peer: string) => boolean
+  sasFor: (peer: string) => string
   connectedPeers: string[]
   aggregatePhase: ConnectionPhase
   history: History
@@ -186,6 +188,13 @@ export function useSecureSession(identity: Identity | null): SecureSession {
   const typingFor = useCallback((peer: string): boolean => views[peer]?.typing ?? false, [views])
   const isSecure = useCallback((peer: string): boolean => views[peer]?.phase === 'secure', [views])
 
+  // SAS anti-MITM : dérivé de la session partagée, identique des deux côtés (cf. deriveSas).
+  const sasFor = useCallback((peer: string): string => {
+    const rt = runtimeRef.current.get(peer)
+    if (!rt?.keys || views[peer]?.phase !== 'secure') return ''
+    return deriveSas(rt.keys)
+  }, [views])
+
   const connectedPeers = useMemo(
     () => Object.keys(views).filter((p) => views[p].phase === 'secure'),
     [views],
@@ -209,7 +218,7 @@ export function useSecureSession(identity: Identity | null): SecureSession {
   }, [])
 
   return {
-    phaseFor, fingerprintFor, typingFor, isSecure, connectedPeers, aggregatePhase,
+    phaseFor, fingerprintFor, typingFor, isSecure, sasFor, connectedPeers, aggregatePhase,
     history, messagesFor: getMessages, hydrateHistory, appendExternal,
     beginOffer, respondToOffer, applyAnswer, sendMessage, notifyTyping,
   }

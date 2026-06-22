@@ -28,6 +28,7 @@ interface AppShellProps {
   pinnedIds: string[]
   onTogglePin: (id: string) => void
   onSend: (peer: string, body: string) => void
+  onVerify: (peer: string) => void
   onSendRequest: (addr: string) => { ok: boolean; error?: string }
   onAccept: (r: FriendRequest) => void
   onDecline: (r: FriendRequest) => void
@@ -63,7 +64,7 @@ export function AppShell(props: AppShellProps): React.ReactElement {
         friends={roster.friends} selfPseudo={identity.pseudo} sidebarOpen={layout.sidebarOpen}
         onToggleSidebar={layout.toggleSidebar} onSend={props.onSend}
         onCloseChat={props.onCloseChat} onOpenChat={props.onOpenChat}
-        pinnedIds={props.pinnedIds} onTogglePin={props.onTogglePin}
+        pinnedIds={props.pinnedIds} onTogglePin={props.onTogglePin} onVerify={props.onVerify}
       />
 
       <ProfileDrawer

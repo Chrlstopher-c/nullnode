@@ -39,6 +39,7 @@ export interface RosterState {
   removeFriend: (id: string) => void
   hasFriend: (address: string) => boolean
   setPresence: (address: string, presence: Presence) => void
+  setVerified: (address: string, verified: boolean) => void
   updatePseudo: (address: string, pseudo: string) => void
   resetPresence: () => void
   hydrate: () => void
@@ -90,6 +91,15 @@ export function useRoster(selfId: string | null): RosterState {
     })
   }, [])
 
+  // Marque un ami comme vérifié (SAS comparé de vive voix). Garde la même référence si inchangé.
+  const setVerified = useCallback((address: string, verified: boolean): void => {
+    setFriends((prev) => {
+      const target = prev.find((f) => f.address === address)
+      if (!target || target.verified === verified) return prev
+      return prev.map((f) => (f.address === address ? { ...f, verified } : f))
+    })
+  }, [])
+
   // Met à jour le pseudo d'un ami (propagé quand il se renomme). Conserve un alias custom local.
   const updatePseudo = useCallback((address: string, pseudo: string): void => {
     const next = pseudo.trim()
@@ -110,5 +120,5 @@ export function useRoster(selfId: string | null): RosterState {
     setFriends(loadAccount<Friend[]>(addr, 'roster', []).map(healFriend))
   }, [addr])
 
-  return { friends, addFriend, removeFriend, hasFriend, setPresence, updatePseudo, resetPresence, hydrate }
+  return { friends, addFriend, removeFriend, hasFriend, setPresence, setVerified, updatePseudo, resetPresence, hydrate }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ChevronDown, ChevronLeft, Phone, Pin, PinOff, Send } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Phone, Pin, PinOff, Send, Shield, ShieldCheck } from 'lucide-react'
 import { resolvePeerHandle } from './peer-label'
 import type { SecureSession } from '../session/use-secure-session'
 import type { SecureMessage } from '../shared/types'
@@ -80,11 +80,77 @@ function PinnedBar({ messages, selfPseudo, peerName, onTogglePin }: PinnedBarPro
   )
 }
 
+interface VerifyControlProps {
+  sas: string
+  verified: boolean
+  onVerify: () => void
+}
+
+/** Panneau de comparaison SAS : code à lire de vive voix + verdict identique/différent. */
+function SasPanel({ sas, onMatch, onMismatch }: {
+  sas: string; onMatch: () => void; onMismatch: () => void
+}): React.ReactElement {
+  return (
+    <div
+      className="absolute left-0 right-0 top-full z-10 mt-2 flex flex-col gap-2 rounded border px-3 py-3"
+      style={{ borderColor: 'var(--line)', background: 'var(--surface-0)' }}
+    >
+      <span className="text-[15px] tracking-[0.3em]" style={{ color: 'var(--accent)' }}>{sas}</span>
+      <span className="text-[10px]" style={{ color: 'var(--text-lo)' }}>Comparez ce code de vive voix avec votre pair</span>
+      <div className="flex gap-2">
+        <button
+          onClick={onMatch} className="rounded border px-3 py-1 text-[11px] tracking-[0.1em]"
+          style={{ borderColor: 'var(--accent-dim)', color: 'var(--accent)' }}
+        >✓ IDENTIQUE</button>
+        <button
+          onClick={onMismatch} className="rounded border px-3 py-1 text-[11px] tracking-[0.1em]"
+          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+        >✗ DIFFÉRENT</button>
+      </div>
+    </div>
+  )
+}
+
+/** Contrôle anti-MITM : badge si vérifié, sinon bouton bouclier qui ouvre le panneau SAS. */
+function VerifyControl({ sas, verified, onVerify }: VerifyControlProps): React.ReactElement {
+  const [showSas, setShowSas] = useState(false)
+  const [mismatch, setMismatch] = useState(false)
+
+  if (verified) {
+    return (
+      <span title="identité vérifiée" style={{ color: 'var(--accent)' }}>
+        <ShieldCheck size={14} />
+      </span>
+    )
+  }
+
+  return (
+    <>
+      <button onClick={() => { setShowSas((v) => !v); setMismatch(false) }} title="vérifier l'identité" style={{ color: 'var(--text-mid)' }}>
+        <Shield size={14} />
+      </button>
+      {showSas && (
+        <SasPanel
+          sas={sas} onMatch={() => { onVerify(); setShowSas(false) }}
+          onMismatch={() => { setMismatch(true); setShowSas(false) }}
+        />
+      )}
+      {mismatch && (
+        <span className="absolute left-0 top-full z-10 mt-2 text-[10px]" style={{ color: 'var(--danger)' }}>
+          canal potentiellement compromis
+        </span>
+      )}
+    </>
+  )
+}
+
 interface Props {
   session: SecureSession
   peer: string
   friends: Friend[]
   selfPseudo: string
+  verified: boolean
+  onVerify: () => void
   pinnedIds: string[]
   onTogglePin: (id: string) => void
   onSend: (peer: string, body: string) => void
@@ -93,7 +159,7 @@ interface Props {
 
 /** One conversation: header, pinned bar, message stream, composer. */
 export function MessageStream(props: Props): React.ReactElement {
-  const { session, peer, friends, selfPseudo, pinnedIds, onTogglePin, onSend, onBack } = props
+  const { session, peer, friends, selfPseudo, verified, onVerify, pinnedIds, onTogglePin, onSend, onBack } = props
   const [draft, setDraft] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
   const messages = session.messagesFor(peer)
@@ -113,11 +179,16 @@ export function MessageStream(props: Props): React.ReactElement {
 
   return (
     <div className="flex h-[60vh] w-full min-w-0 flex-col gap-4">
-      <header className="flex items-center gap-3 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
+      <header className="relative flex items-center gap-3 border-b pb-3" style={{ borderColor: 'var(--line)' }}>
         <button onClick={onBack} title="retour" style={{ color: 'var(--text-mid)' }}><ChevronLeft size={16} /></button>
         <span className="h-2 w-2 rounded-full" style={{ background: connected ? 'var(--accent)' : 'var(--text-lo)' }} />
         <span className="text-[13px]" style={{ color: 'var(--text-hi)' }}>{resolvePeerHandle(peer, friends)}</span>
-        <button disabled title="appel vocal — bientôt" className="ml-auto disabled:opacity-30" style={{ color: 'var(--text-mid)' }}>
+        {connected && (
+          <span className="ml-auto">
+            <VerifyControl sas={session.sasFor(peer)} verified={verified} onVerify={onVerify} />
+          </span>
+        )}
+        <button disabled title="appel vocal — bientôt" className={`${connected ? '' : 'ml-auto'} disabled:opacity-30`} style={{ color: 'var(--text-mid)' }}>
           <Phone size={14} />
         </button>
         <span className="text-[9px]" style={{ color: connected ? 'var(--accent)' : 'var(--text-lo)' }}>
