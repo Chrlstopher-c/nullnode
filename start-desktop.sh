@@ -19,6 +19,13 @@ fi
 
 : > "$LOG_FILE"
 
+# WebKitGTK + Wayland (surtout NVIDIA) → "Gdk Error 71 (Protocol error)". Désactiver le renderer
+# DMABUF corrige le crash en gardant l'accélération GPU (nécessaire à la scène WebGL).
+# Si l'erreur persiste malgré ça : forcer XWayland → `export GDK_BACKEND=x11`.
+if [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]; then
+  export WEBKIT_DISABLE_DMABUF_RENDERER=1
+fi
+
 # setsid : nouveau groupe de process → stop-desktop.sh tue tout l'arbre (vite + cargo + webview).
 setsid bun run tauri:dev > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
