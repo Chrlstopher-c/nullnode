@@ -10,8 +10,11 @@ import { useRoster } from './roster/use-roster'
 import { useSecureSession } from './session/use-secure-session'
 import { useRendezvous } from './rendezvous/use-rendezvous'
 import { useDesktopPresence } from './desktop/use-desktop-presence'
+import { useIdle } from './presence/use-idle'
 import type { IdentityState } from './identity/use-identity'
 import type { RelaySetting } from './settings/use-relay-setting'
+
+const IDLE_MS = 3 * 60 * 1000
 
 interface Props {
   identity: IdentityState
@@ -46,6 +49,9 @@ export function SessionApp({ identity, relay }: Props): React.ReactElement {
 
   // Daemon desktop : présence relay tenue par le ghost quand la GUI est fermée (no-op hors Tauri).
   useDesktopPresence({ ready: identity.status === 'ready', address: identity.address, relayUrl: relay.relayUrl })
+
+  // Auto-away : online→away après inactivité, retour online à la première interaction.
+  useIdle(IDLE_MS, () => rendezvous.setPresence('away'), () => rendezvous.setPresence('online'))
 
   const { markSeen } = unread
   useEffect(() => { if (chatPeer) markSeen(chatPeer) }, [chatPeer, session.history, markSeen])
