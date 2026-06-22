@@ -32,7 +32,7 @@ export function deriveSas(keys: SessionKeys): string {
   if (!keys.tx?.length || !keys.rx?.length) return ''
   const ordered = [keys.tx, keys.rx].sort(compareBytes)
   const concat = new Uint8Array([...ordered[0], ...ordered[1]])
-  const hash = sodium.crypto_generichash(SAS_WORD_COUNT, concat)
+  const hash = sodium.crypto_generichash(SAS_WORD_COUNT, concat, null)
   const words = Array.from({ length: SAS_WORD_COUNT }, (_, i) => SAS_WORDS[hash[i] % SAS_WORDS.length])
   return words.join('-')
 }

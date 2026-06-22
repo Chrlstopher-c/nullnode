@@ -9,7 +9,7 @@ function ensureReady(): Promise<void> {
 
 /** Short, human-readable fingerprint of a public key (HUD display). */
 function deriveFingerprint(publicKey: Uint8Array): string {
-  const hash = sodium.crypto_generichash(8, publicKey)
+  const hash = sodium.crypto_generichash(8, publicKey, null)
   const hex = sodium.to_hex(hash).toUpperCase()
   return hex.match(/.{1,4}/g)?.join(' ') ?? hex
 }

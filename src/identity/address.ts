@@ -30,13 +30,13 @@ export function decodeAddress(address: string): Uint8Array {
 
 /** Derive a stable, friendly 3-word callsign from a public key (display only). */
 export function callsign(publicKey: Uint8Array): string {
-  const hash = sodium.crypto_generichash(6, publicKey)
+  const hash = sodium.crypto_generichash(6, publicKey, null)
   return [0, 2, 4].map((i) => WORDS[hash[i] % WORDS.length]).join('-')
 }
 
 /** Derive a stable 6-digit discriminator from a public key — distinguishes homonyms. */
 export function discriminator(publicKey: Uint8Array): string {
-  const hash = sodium.crypto_generichash(4, publicKey)
+  const hash = sodium.crypto_generichash(4, publicKey, null)
   const num = ((hash[0] << 24) | (hash[1] << 16) | (hash[2] << 8) | hash[3]) >>> 0
   return String(num % 1_000_000).padStart(6, '0')
 }

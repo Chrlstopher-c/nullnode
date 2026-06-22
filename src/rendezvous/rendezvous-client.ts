@@ -35,12 +35,15 @@ export class RendezvousClient {
   private reconnect: ReturnType<typeof setTimeout> | null = null
   private backoff = BACKOFF_MIN_MS
   private closing = false
+  private readonly url: string
+  private readonly selfAddr: string
+  private readonly handlers: RendezvousHandlers
 
-  constructor(
-    private readonly url: string,
-    private readonly selfAddr: string,
-    private readonly handlers: RendezvousHandlers,
-  ) {}
+  constructor(url: string, selfAddr: string, handlers: RendezvousHandlers) {
+    this.url = url
+    this.selfAddr = selfAddr
+    this.handlers = handlers
+  }
 
   /** Ouvre le WebSocket et branche les listeners. */
   connect(): void {
