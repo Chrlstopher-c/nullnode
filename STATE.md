@@ -64,14 +64,27 @@ fédérés. « Zéro dépendance externe imposée » ≠ « zéro machine » —
   connexion auto ami-à-ami via bouton CALL).
 - ✅ Panneau réseau : statut RELAY UP/DOWN, présence temps réel, bouton CALL par ami online.
 
-## ▶ REPRISE — lire en premier (2026-06-21, suite sécurité + desktop)
-Repo **public** : github.com/trinityUwU/nullnode. P1 (durcissement) + P2 (daemon) **livrés et
-validés** ce jour. État : socle réseau + rendez-vous + backup + sécurité at-rest + multi-compte
-+ scaffold daemon Tauri. **Prochain sujet décidé avec Chris : l'interface immersive** (refonte
-UI/UX). Différé explicitement : anti-MITM (SAS), mesh peer-relay (réserve technique : fuite
-métadonnées, fallback only — à cadrer ensemble), UI nodes-driven, packaging `tauri build`.
-Relai local : `cd relay && ./start.sh` (:8791). App web : `./start.sh` (:5180). Daemon desktop :
-`bun run tauri:dev` (à valider sur machine : tray/autostart/notifs non testables headless).
+## ▶ REPRISE — lire en premier (2026-06-22, multi-session + sécurité finale + desktop natif)
+Repo **public** : github.com/trinityUwU/nullnode. Livrés et tsc-verts ce jour :
+- ✅ **Multi-session WebRTC** : N conversations simultanées (`Map<peer, PeerRuntime>` + vues
+  réactives, API par-pair). Dead-drop manuel retiré (`use-secure-session.ts`, `peer-session.ts`).
+- ✅ **SAS anti-MITM** (`crypto/sas.ts`) : 4 mots dérivés des clés de session (symétrique),
+  comparés de vive voix → flag `verified` + badge bouclier (MessageStream + FriendsList).
+- ✅ **Auto-away** (`presence/use-idle.ts`) : inactivité 3 min → away, retour online à l'interaction.
+- ✅ **Réglages visuels** (`settings/visual-*`) : densité/grain/aberration + accent ambre, persistés.
+- ✅ **Background réactif** : pulse de luminescence (BloomDriver) sur message reçu / connexion.
+- ✅ **Desktop natif** : scripts `start-desktop.sh` + shims Wayland/NVIDIA (DMABUF off + XWayland)
+  → l'app Tauri s'affiche sur Hyprland/RTX 3060. Dev desktop auto-suffisant (relay local au boot).
+- 🧹 Dead code retiré : `dead-drop.ts`, `DropCode.tsx`, `CommsConsole.tsx`, `NetworkPanel.tsx`.
+
+**Décisions actées (2026-06-22)** : fallback dead-drop **abandonné** (on s'appuie sur le Pi H24) ;
+STUN **reporté** (souveraineté ; coturn sur le Pi si besoin un jour) ; **mesh peer-relay** = même
+problème que le dead-drop abandonné + fuite de métadonnées → à trancher, NON implémenté.
+
+**À valider à la main (P0, multi-fenêtres — non simulables headless)** : multi-conv 3 fenêtres ·
+SAS identique des 2 côtés · DM async · rendu visuel (sliders, ambre, pulse).
+
+Dev web : `./start.sh` (relai local :8791 + app :5180). Dev desktop : `./start-desktop.sh`.
 
 ## Sécurité + desktop — LIVRÉ (2026-06-21)
 - ✅ **Relay durci** (`relay/src/limits.ts` + stores) : TTL enveloppes (7j, sweep horaire), cap

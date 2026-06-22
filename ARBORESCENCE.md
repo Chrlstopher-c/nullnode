@@ -49,22 +49,25 @@ src/
     backup-sync.ts              Collecte + merge convergent (cloisonné par compte)
     BackupPanel.tsx             Export/import fichier .ncb souverain
   comms/
-    CommsConsole.tsx            Aiguille connect ↔ stream selon la phase
-    MessageStream.tsx           Flux messages chiffrés + composer
+    MessageStream.tsx           Flux messages chiffrés + composer + contrôle SAS (VerifyControl)
     ConversationList.tsx        Liste des conversations
-    ConnectPanel.tsx / DropCode.tsx  Échange dead-drop (fallback)
+    use-pins.ts                 Messages épinglés par pair (cloisonné par compte)
     use-unread.ts               Non-lus par pair (cloisonné par compte)
     peer-label.ts               Résolution handle d'un pair
   settings/
     relay-config.ts             Presets + URL relai (défaut localhost), persisté
     use-relay-setting.ts        Hook URL relai (reconnecte le client)
     SettingsPanel.tsx           Réglage source relai + indicateur d'état
+    visual-config.ts            Config visuelle + thèmes accent (phosphor/ambre), persistée
+    use-visual-setting.ts       Hook réglages visuels + swap CSS vars accent au :root
+    VisualSettingsPanel.tsx     Sliders densité/grain/aberration + toggle accent
   desktop/
     tauri-bridge.ts             Wrappers Tauri typés, no-op hors Tauri
     use-desktop-presence.ts     Câblage configurePresence / guiOpened / guiClosed
   visualizer/
     network-core.ts / shaders.ts        Géométrie + GLSL
-    NetworkScene.tsx / DataCore.tsx / DataStreams.tsx / ParticleField.tsx
+    NetworkScene.tsx                    Scène + post-process ; BloomDriver = pulse réactif (pulseToken)
+    DataCore.tsx / DataStreams.tsx / ParticleField.tsx   (couleur accent + densité paramétrables)
   boot/  hud/                   Overlay d'intro + bandeaux data
 relay/src/                      Node de rendez-vous aveugle (Bun WS, déployé sur le Pi)
   server.ts                     Bun.serve WS : routing + présence
@@ -81,7 +84,8 @@ src-tauri/                      Daemon desktop (Tauri 2 + Rust)
   src/tray.rs / window.rs / state.rs / main.rs
   tauri.conf.json               Fenêtre cachée au boot, devUrl 5180, frontendDist ../dist
 
-start.sh / stop.sh / restart.sh  Gestion process app (PID, reset log)
+start.sh / stop.sh / restart.sh  Dev web : relai local + app Vite (PID, reset log)
+start-desktop.sh ...             Dev desktop : tauri:dev (fenêtre native + daemon) ; shims Wayland/NVIDIA
 relay/start.sh ...               Gestion process relai local
 logs/                            Logs runtime (reset au start)
 STATE.md TODO.md ARCHITECTURE.md ARBORESCENCE.md README.md RENDEZVOUS-PROTOCOL.md

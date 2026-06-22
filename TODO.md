@@ -62,8 +62,8 @@ Concept tranché par Chris : **le background WebGL reste purement cosmétique**,
 de navigation. Pas de nodes cliquables, pas de sections-dans-le-graphe. Le background doit
 juste être dynamique (luminescence) et **réactif à l'activité de l'app**. L'UI applicative
 vit en 2D par-dessus (cartes NetworkPanel + CommsConsole). Domaine `navigator/` supprimé.
-- [ ] **(piste cosmétique)** Background réactif à l'activité : pulse de luminescence sur message
-      reçu / connexion établie, au-delà de la réactivité phase déjà en place. À cadrer avec Chris.
+- [x] **Background réactif à l'activité** ✅ (2026-06-22) : `pulseToken` (messages reçus + pairs
+      connectés) → `BloomDriver` fait un pic de luminescence + decay ease-out (useFrame, ref).
 
 ## P2 — SÉCURITÉ & ROBUSTESSE
 - [x] **Seed chiffrée au repos** ✅ (2026-06-21) : vault PIN `crypto_pwhash` (Argon2) + `secretbox`
@@ -82,8 +82,12 @@ vit en 2D par-dessus (cartes NetworkPanel + CommsConsole). Domaine `navigator/` 
 - [~] STUN WAN — **REPORTÉ (2026-06-22)** : pas de STUN public (souveraineté + fuite IP). Le
       store-and-forward via le relay couvre déjà l'échec du P2P direct (messages chiffrés relayés).
       Si temps-réel direct WAN un jour nécessaire → **coturn self-hosted sur le Pi** (souverain).
-- [ ] **Mesh peer-relay** (différé, à cadrer) : réserve technique — fuite de métadonnées,
-      modèle de confiance à décider, fallback only.
+- [~] **Mesh peer-relay** — **À TRANCHER, non implémenté (2026-06-22)**. Résout le même problème
+      (relai down) que le fallback dead-drop abandonné → par cohérence devrait tomber aussi, SAUF
+      si voulu pour une vraie décentralisation au-delà du Pi (fédération). Coût propre : un pair
+      relayeur apprend qui-parle-à-qui (fuite de métadonnées) → régression privacy vs node aveugle
+      perso. Décisions préalables : qui relaie (amis/tous ?), anti-DoS/drop, anti-sybil. Architecture
+      produit → décision de Chris avant toute implémentation.
 
 ## P3 — PACKAGING & POLISH
 - [x] **Daemon desktop Tauri 2** ✅ (2026-06-21) : scaffold `src-tauri/`, ghost + tray + handoff.

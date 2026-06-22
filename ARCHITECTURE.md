@@ -2,8 +2,9 @@
 
 Messagerie P2P chiffrée end-to-end, design-first, **souveraine** : pas de serveur central
 imposé. Le rendez-vous passe par un **node aveugle self-hosted** (sur le Pi de Chris) qui ne
-voit que des adresses publiques et des blobs chiffrés — jamais les messages. Fallback dead-drop
-(codes SDP) si pas de relai. Identité dérivée d'une seed BIP39, chiffrée at-rest par un PIN.
+voit que des adresses publiques et des blobs chiffrés — jamais les messages. On s'appuie sur ce
+node H24 (le fallback dead-drop manuel a été abandonné). Identité dérivée d'une seed BIP39,
+chiffrée at-rest par un PIN. Anti-MITM par SAS (code court comparé de vive voix).
 
 ## Carte des domaines (`src/`)
 
@@ -11,16 +12,17 @@ Organisation par domaine métier (screaming architecture), pas par couche techni
 
 | Domaine | Responsabilité unique | Frontière publique |
 |---|---|---|
-| `crypto/` | Primitives libsodium (KX, ChaCha20-Poly1305, fingerprint). Les clés ne quittent jamais la mémoire. | `deriveSession`, `seal`, `open`, `ensureReady` |
+| `crypto/` | Primitives libsodium (KX, ChaCha20-Poly1305, fingerprint, SAS). Les clés ne quittent jamais la mémoire. | `deriveSession`, `seal`, `open`, `deriveSas`, `ensureReady` |
 | `identity/` | Identité persistante (seed BIP39) + adresse + handle + **vault PIN** (chiffrement at-rest). | `useIdentity`, `encodeAddress`, `callsign`, `seed-vault` |
 | `auth/` | Porte d'entrée : login / register / unlock selon l'état (anon/locked/ready). Présentation. | `AuthGate` |
-| `roster/` | Carnet d'amis local, **cloisonné par compte** (CRUD, présence, confiance). Aucun annuaire. | `useRoster`, `NetworkPanel` |
+| `roster/` | Carnet d'amis local, **cloisonné par compte** (CRUD, présence, confiance `verified`). Aucun annuaire. | `useRoster`, `FriendsList` |
 | `rendezvous/` | Client du node aveugle : présence, friend-requests, DM relayés, backup. Scellage des signaux. | `useRendezvous`, `RendezvousClient` |
-| `transport/` | Lien WebRTC P2P + dead-drops SDP (fallback). Aucune logique crypto. | `PeerLink`, `encodeDrop`, `decodeDrop` |
-| `session/` | Orchestration : relie identité, transport et chiffrement. Historique cloisonné par compte. | `useSecureSession` |
+| `transport/` | Lien WebRTC P2P (no STUN, LAN/localhost). Aucune logique crypto. | `PeerLink` |
+| `session/` | Orchestration : N sessions simultanées (Map<peer>), identité + transport + chiffrement + SAS. | `useSecureSession` |
+| `presence/` | Détection d'inactivité générique (events DOM) pour l'auto-away. Aucune logique réseau. | `useIdle` |
 | `backup/` | Backup zero-knowledge (blob chiffré seed-derived) + merge convergent + export fichier. | `BackupPanel`, `collectBackupState`, `mergeBackupState` |
-| `comms/` | Console interactive : connexion puis flux de messages chiffrés + non-lus. | `CommsConsole` |
-| `settings/` | Source du node de rendez-vous (presets + URL) + indicateur d'état. | `useRelaySetting`, `SettingsPanel` |
+| `comms/` | Flux de messages chiffrés + composer + non-lus + épingles + contrôle SAS. | `MessageStream` |
+| `settings/` | Source du node de rendez-vous + réglages visuels (densité/grain/aberration/accent), persistés. | `useRelaySetting`, `useVisualSetting` |
 | `desktop/` | Pont vers le daemon Tauri (présence/handoff). **No-op hors Tauri** (build web pur intact). | `tauri-bridge`, `useDesktopPresence` |
 | `visualizer/` | Scène WebGL (r3f) du réseau. Lecture seule de la phase, aucune logique métier. | `NetworkScene` |
 | `hud/` `boot/` | Bandeaux techniques + overlay d'intro. Présentation pure. | `HudOverlay`, `BootSequence` |
@@ -36,9 +38,9 @@ Organisation par domaine métier (screaming architecture), pas par couche techni
 
 ## Définitions anti-recouvrement
 
-- **transport** = tuyau (WebRTC, SDP). Ne chiffre rien, ignore le contenu.
-- **crypto** = serrure (clés, scellage). Ignore le réseau.
-- **session** = seul domaine autorisé à composer crypto + transport pour une conversation.
+- **transport** = tuyau (WebRTC). Ne chiffre rien, ignore le contenu.
+- **crypto** = serrure (clés, scellage, SAS). Ignore le réseau.
+- **session** = seul domaine autorisé à composer crypto + transport pour une conversation (N en parallèle).
 - **rendezvous** = client du node (présence/signaling/relay/backup). Ne déchiffre pas les DM (délègue à session).
 - **visualizer / hud / comms / auth** = présentation. Ne touchent ni au réseau ni aux clés en direct.
 
@@ -58,6 +60,8 @@ Organisation par domaine métier (screaming architecture), pas par couche techni
   à coût quasi nul), webview à la demande. La crypto reste côté JS.
 - **libsodium-wrappers-sumo** (toute l'app) : le build base n'expose pas `crypto_pwhash` (Argon2),
   requis pour le vault PIN. Constantes sodium lues à l'appel (après `ready`), jamais au top-level.
-- **Pas de STUN/TURN** par défaut : candidats hôte/LAN, souveraineté. STUN optionnel pour le WAN (dette).
+- **Pas de STUN/TURN** : candidats hôte/LAN, souveraineté. Si le P2P direct échoue (WAN inter-NAT),
+  le store-and-forward via le node aveugle prend le relais. STUN public écarté ; coturn self-hosted
+  sur le Pi si un jour le temps-réel direct WAN devient nécessaire.
 - **Node aveugle self-hosted** plutôt que serveur tiers : souveraineté = sa propre machine (le Pi),
   exposée via Cloudflare Tunnel. « Zéro dépendance externe imposée » ≠ « zéro machine ».
