@@ -3,6 +3,7 @@ dist
 logs
 *.pid
 .env
+.env.local
 
 # tauri (build Rust)
 src-tauri/target

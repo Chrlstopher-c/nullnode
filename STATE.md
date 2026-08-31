@@ -30,16 +30,16 @@ Asynchrone via le relai **store-and-forward** : si B offline, le relai stocke et
 
 ## Node déployé sur le Pi (2026-06-21) — souveraineté assumée
 Décision actée : **pas de serveur central imposé, mais un node personnel self-hosted H24**.
-Le node aveugle (store-and-forward) tourne désormais sur le **Raspberry Pi** (pi@10.0.0.2),
+Le node aveugle (store-and-forward) tourne désormais sur le **Raspberry Pi** (adresse LAN dans `.env.local`),
 pas sur localhost. C'est le point de persistance qui résout l'async (A et B jamais online en
 même temps → le node tient le message). Modèle cible : un node par user qui veut l'async fiable,
 fédérés. « Zéro dépendance externe imposée » ≠ « zéro machine » — le Pi est ton infra.
 - Service systemd `nullnode-relay.service` (User=pi, Restart=always, enabled au boot), port 8791.
 - Code : `~/nullnode-relay/` sur le Pi, Bun 1.3.14 installé, lancé via `~/.bun/bin/bun`.
-- Exposition WAN : **wss://relai.exemple** via Cloudflare Tunnel `portfolio`
+- Exposition WAN : le domaine du tunnel (`.env.local`) via Cloudflare Tunnel `portfolio`
   (388bc072, compte `cert.pem.old-account`). Ingress ajouté dans `/etc/cloudflared/config.yml`
   (backup `.bak-<ts>`), CNAME créé, validé E2E (handshake `welcome` OK via URL publique).
-- Client : `DEFAULT_RELAY = wss://relai.exemple`. Override dev :
+- Client : `VITE_RELAY_URL` (aucune adresse en dur dans le code). Override dev :
   `VITE_RELAY_URL=ws://127.0.0.1:8791`. Redéploiement node : `tar | ssh` + `systemctl restart`.
 
 ## Modèle réseau (décidé 2026-06-21)
