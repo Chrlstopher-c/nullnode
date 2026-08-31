@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="539" viewBox="0 0 1040 539" fill="none" role="img">
+  <rect width="1040" height="539" rx="16" fill="#0a0b0e" stroke="#20242c"/>
+  <rect x="30" y="24" width="980" height="153" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="46" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">ON YOUR DEVICE · BROWSER STORAGE</text>
+  <path d="M49 67 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="79" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">nullnode.acct.&lt;address&gt;.roster</text>
+    <text x="500" y="79" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">your contacts, one namespace per account so several identities never mix</text>
+  <path d="M49 97 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="109" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">nullnode.acct.&lt;address&gt;.history</text>
+    <text x="500" y="109" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the conversations you keep locally</text>
+  <path d="M56 126 l8 3 v7 c0 5 -4 9 -8 11 c-4 -2 -8 -6 -8 -11 v-7 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="139" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">the sealed vault</text>
+    <text x="500" y="139" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">your twelve words, encrypted with Argon2 over your PIN; opened into session memory</text>
+    <text x="500" y="156" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">after unlock</text>
+  <rect x="30" y="195" width="980" height="136" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="217" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">ON THE RELAY · OPAQUE BYTES ONLY</text>
+  <path d="M49 238 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="250" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">relay/data/envelopes.json</text>
+    <text x="500" y="250" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">sealed messages waiting for someone offline, capped and expiring after seven days</text>
+  <path d="M49 268 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="280" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">relay/data/backups.json</text>
+    <text x="500" y="280" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">one encrypted blob per address, overwritten at each backup</text>
+  <path d="M49 298 h9 l5 5 v11 h-14 z" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="310" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">nullnode-backup-*.ncb</text>
+    <text x="500" y="310" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the same blob, exported by hand to a file you keep</text>
+  <rect x="30" y="349" width="980" height="166" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <text x="46" y="371" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="11" letter-spacing="2.5" fill="#8b929c">PORTS AND LOGS</text>
+  <path d="M48 395 h16 M48 400 h16 M48 405 h10" stroke="#d8a35f" stroke-width="1.6" stroke-linecap="round"/>
+    <text x="76" y="404" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">localhost:5180</text>
+    <text x="500" y="404" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the app in development</text>
+  <path d="M48 425 h16 M48 430 h16 M48 435 h10" stroke="#d8a35f" stroke-width="1.6" stroke-linecap="round"/>
+    <text x="76" y="434" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">127.0.0.1:8791</text>
+    <text x="500" y="434" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">the relay (RELAY_PORT), reachable over the LAN or a TLS tunnel</text>
+  <path d="M48 452 h14 v16 h-14 z M51 457 h8 M51 461 h8 M51 465 h5" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="464" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">logs/dev.log · logs/desktop.log</text>
+    <text x="500" y="464" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">app output, with the pid beside it</text>
+  <path d="M48 482 h14 v16 h-14 z M51 487 h8 M51 491 h8 M51 495 h5" fill="none" stroke="#d8a35f" stroke-width="1.4"/>
+    <text x="76" y="494" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12.5" fill="#f4f1ea">relay/logs/relay.log</text>
+    <text x="500" y="494" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" fill="#c3cad3">who connected and what was routed, never what it contained</text>
+</svg>

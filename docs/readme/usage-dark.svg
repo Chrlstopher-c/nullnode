@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="310" viewBox="0 0 1040 310" fill="none" role="img">
+  <defs><marker id="stp-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#8b929c"/></marker></defs>
+  <rect width="1040" height="310" rx="16" fill="#0a0b0e" stroke="#20242c"/>
+  <text x="30" y="36" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="12" letter-spacing="2.5" fill="#8b929c">TALKING TO SOMEONE</text>
+  <rect x="30" y="56" width="478" height="103" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <circle cx="56" cy="82" r="13" fill="#d8a35f"/>
+  <text x="56" y="87" text-anchor="middle" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="13" font-weight="700" fill="#0a0b0e">1</text>
+  <text x="78" y="87" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" fill="#f4f1ea">Create an identity</text>
+  
+  <text x="44" y="116" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">Twelve words are generated on your device and the keypair is derived from</text><text x="44" y="131" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">them. A PIN encrypts those words at rest. Write them down: nothing else</text><text x="44" y="146" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">can bring the account back.</text><path d="M512 82 l16 0" stroke="#8b929c" stroke-width="1.4" marker-end="url(#stp-dark)"/>
+  <rect x="532" y="56" width="478" height="103" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <circle cx="558" cy="82" r="13" fill="#d8a35f"/>
+  <text x="558" y="87" text-anchor="middle" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="13" font-weight="700" fill="#0a0b0e">2</text>
+  <text x="580" y="87" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" fill="#f4f1ea">Share your address</text>
+  
+  <text x="546" y="116" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">null: followed by your public key, with a three-word callsign and a</text><text x="546" y="131" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">PSEUDO#0000 handle. Send it however you like, it is public by design.</text>
+  <rect x="30" y="183" width="478" height="103" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <circle cx="56" cy="209" r="13" fill="#d8a35f"/>
+  <text x="56" y="214" text-anchor="middle" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="13" font-weight="700" fill="#0a0b0e">3</text>
+  <text x="78" y="214" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" fill="#f4f1ea">Ask, and be accepted</text>
+  
+  <text x="44" y="243" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">Paste their address in Discover and send. The request waits on the relay</text><text x="44" y="258" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">if they are offline, sealed, and lands when they come back.</text><path d="M512 209 l16 0" stroke="#8b929c" stroke-width="1.4" marker-end="url(#stp-dark)"/>
+  <rect x="532" y="183" width="478" height="103" rx="12" fill="#161b22" stroke="#2a313c"/>
+  <circle cx="558" cy="209" r="13" fill="#d8a35f"/>
+  <text x="558" y="214" text-anchor="middle" font-family="ui-monospace,'SF Mono',Consolas,monospace" font-size="13" font-weight="700" fill="#0a0b0e">4</text>
+  <text x="580" y="214" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14.5" font-weight="600" fill="#f4f1ea">Check the four words</text>
+  
+  <text x="546" y="243" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">Once the channel is up, both sides see four words derived from the session</text><text x="546" y="258" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="11.5" fill="#8b929c">keys. Read them aloud. If they match, nobody is in the middle.</text>
+</svg>
