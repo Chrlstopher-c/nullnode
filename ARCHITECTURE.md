@@ -24,8 +24,9 @@ Organisation par domaine métier (screaming architecture), pas par couche techni
 | `comms/` | Flux de messages chiffrés + composer + non-lus + épingles + contrôle SAS. | `MessageStream` |
 | `settings/` | Source du node de rendez-vous + réglages visuels (densité/grain/aberration/accent), persistés. | `useRelaySetting`, `useVisualSetting` |
 | `desktop/` | Pont vers le daemon Tauri (présence/handoff). **No-op hors Tauri** (build web pur intact). | `tauri-bridge`, `useDesktopPresence` |
-| `visualizer/` | Scène WebGL (r3f) du réseau. Lecture seule de la phase, aucune logique métier. | `NetworkScene` |
-| `hud/` `boot/` | Bandeaux techniques + overlay d'intro. Présentation pure. | `HudOverlay`, `BootSequence` |
+| `visualizer/` | Scène WebGL (r3f) du réseau, fond du login. Lecture seule de la phase. | `NetworkScene` |
+| `workspace/` | Shell post-login « canvas-OS » : topologie réseau vivante (canvas 2D) + dock + fenêtres flottantes. Consomme les hooks, héberge les composants réels. | `Workspace`, `topology-engine`, `useWindowManager` |
+| `boot/` | Overlay d'intro. Présentation pure. | `BootSequence` |
 | `shared/` | Types transverses + **stockage cloisonné par compte** + design tokens. Uniquement le partagé. | `local-store`, `types`, `design/tokens.css` |
 
 ## Composants hors `src/`

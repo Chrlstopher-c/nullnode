@@ -15,3 +15,5 @@ relay/logs
 relay/*.pid
 # Données utilisateur (enveloppes store-and-forward + backups chiffrés) — jamais publiées
 relay/data
+# Sauvegardes exportées à la main : contenu chiffré, mais ce sont les données de quelqu'un
+*.ncb

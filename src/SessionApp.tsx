@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { BootSequence } from './boot/BootSequence'
-import { NetworkScene } from './visualizer/NetworkScene'
-import { SceneBoundary } from './visualizer/SceneBoundary'
-import { HudOverlay } from './hud/HudOverlay'
-import { AppShell } from './shell/AppShell'
+import { Workspace } from './workspace/Workspace'
 import { useUnread } from './comms/use-unread'
 import { usePins } from './comms/use-pins'
 import { useRoster } from './roster/use-roster'
@@ -22,15 +19,14 @@ interface Props {
   identity: IdentityState
   relay: RelaySetting
   visual: VisualSetting
-  scene3d: boolean
 }
 
 /** Application authentifiée : montée uniquement quand l'identité est prête, donc avec
  * une adresse garantie. Les hooks par-compte chargent ainsi leur partition de façon
  * synchrone (aucune ré-hydratation différée, aucune fuite inter-comptes). */
-export function SessionApp({ identity, relay, visual, scene3d }: Props): React.ReactElement {
+export function SessionApp({ identity, relay, visual }: Props): React.ReactElement {
   const [booted, setBooted] = useState(false)
-  const [chatPeer, setChatPeer] = useState<string | null>(null)
+  const [lastPeer, setLastPeer] = useState<string | null>(null)
 
   const roster = useRoster(identity.address)
   const session = useSecureSession(identity.identity)
@@ -42,12 +38,11 @@ export function SessionApp({ identity, relay, visual, scene3d }: Props): React.R
     refreshPseudo: identity.refreshPseudo,
   })
 
-  // Bascule locale + diffusion au pair en une action ; câblée jusqu'à MessageStream.
-  const onTogglePin = useCallback((id: string): void => {
-    if (!chatPeer) return
-    const pinned = pins.togglePin(chatPeer, id)
-    rendezvous.sendPin(chatPeer, id, pinned)
-  }, [chatPeer, pins, rendezvous])
+  // Bascule locale + diffusion au pair en une action (par pair, multi-fenêtre).
+  const onTogglePin = useCallback((peer: string, id: string): void => {
+    const pinned = pins.togglePin(peer, id)
+    rendezvous.sendPin(peer, id, pinned)
+  }, [pins, rendezvous])
 
   const onVerify = useCallback((peer: string): void => roster.setVerified(peer, true), [roster])
 
@@ -58,42 +53,21 @@ export function SessionApp({ identity, relay, visual, scene3d }: Props): React.R
   useIdle(IDLE_MS, () => rendezvous.setPresence('away'), () => rendezvous.setPresence('online'))
 
   const { markSeen } = unread
-  useEffect(() => { if (chatPeer) markSeen(chatPeer) }, [chatPeer, session.history, markSeen])
+  useEffect(() => { if (lastPeer) markSeen(lastPeer) }, [lastPeer, session.history, markSeen])
 
   const openConversation = useCallback((address: string): void => {
     unread.markSeen(address)
-    setChatPeer(address)
+    setLastPeer(address)
     const friend = roster.friends.find((f) => f.address === address)
     const connectedHere = session.isSecure(address)
     if (friend && friend.presence === 'online' && !connectedHere) void rendezvous.connectTo(friend)
   }, [roster.friends, session, rendezvous, unread])
 
-  const incomingPeer = session.connectedPeers.find((p) => p !== chatPeer) ?? null
-
-  // Pilote la luminescence du background : change à chaque message reçu ou connexion établie.
-  const pulseToken = useMemo(() => {
-    const peerMessages = Object.values(session.history)
-      .reduce((n, msgs) => n + msgs.filter((m) => m.author === 'peer').length, 0)
-    return peerMessages + session.connectedPeers.length
-  }, [session.history, session.connectedPeers])
+  const incomingPeer = session.connectedPeers.find((p) => p !== lastPeer) ?? null
 
   return (
     <>
-      {scene3d && (
-        <div className="absolute inset-0">
-          <SceneBoundary>
-            <NetworkScene phase={session.aggregatePhase} visual={visual.visual} pulseToken={pulseToken} />
-          </SceneBoundary>
-        </div>
-      )}
-
-      <HudOverlay
-        selfFingerprint={identity.identity?.fingerprint ?? ''}
-        peerFingerprint={chatPeer ? session.fingerprintFor(chatPeer) : ''}
-        phase={session.aggregatePhase}
-      />
-
-      <AppShell
+      <Workspace
         identity={identity}
         relay={relay}
         visual={visual}
@@ -102,17 +76,14 @@ export function SessionApp({ identity, relay, visual, scene3d }: Props): React.R
         unread={unread}
         requests={rendezvous.incoming}
         relayOnline={rendezvous.relayOnline}
-        peerCount={rendezvous.peerCount}
         myPresence={rendezvous.myPresence}
-        onSetPresence={rendezvous.setPresence}
-        chatPeer={chatPeer}
         incomingPeer={incomingPeer}
+        onSetPresence={rendezvous.setPresence}
         onOpenChat={openConversation}
-        onCloseChat={() => setChatPeer(null)}
-        pinnedIds={chatPeer ? pins.pinnedIds(chatPeer) : []}
-        onTogglePin={onTogglePin}
         onSend={rendezvous.sendDM}
         onVerify={onVerify}
+        pinnedIdsFor={(peer) => pins.pinnedIds(peer)}
+        onTogglePin={onTogglePin}
         onSendRequest={rendezvous.sendRequest}
         onAccept={rendezvous.acceptRequest}
         onDecline={rendezvous.declineRequest}

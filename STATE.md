@@ -1,5 +1,21 @@
 # STATE — NULLNODE
 
+## ▶ REPRISE (2026-06-22 b) — UI post-login refondue en « canvas-OS »
+Le login est **inchangé** (AuthGate/scène WebGL). Une fois authentifié, l'ancien `AppShell`
+(sidebar + pane + drawer) est **remplacé** par `src/workspace/` : shell type OS avec
+**topologie réseau vivante en fond** (canvas 2D maison, `network-canvas/topology-engine.ts`,
+nodes = amis joignables, liens = sessions live, pulse = message envoyé, relai ambre si down),
+**dock** bas, **fenêtres flottantes draggable** (Network/Messages/Identity/System + une fenêtre
+par conversation, multi-fenêtre). Le contenu des fenêtres **réutilise les composants réels
+existants** (MessageStream, FriendsList, FriendRequests, AddFriend, IdentityCard, RecoveryPanel,
+BackupPanel, SettingsPanel, VisualSettingsPanel) — zéro réécriture du câblage crypto/réseau.
+- `SessionApp.tsx` monte désormais `<Workspace>` (props = hooks, glue pins/onTogglePin par pair).
+- 🧹 Supprimés (code mort) : `src/shell/` entier + `src/hud/HudOverlay.tsx`.
+- Build `bun run build` vert, 0 erreur console (validé Playwright). Source du design :
+  `~/Downloads/nullnode-canvas-os.html` (proto Opus cloud).
+- ⏳ À faire éventuellement : menu contextuel clic-droit sur les pairs (retiré v1, non câblé) ;
+  perf glassmorphisme empilé à éprouver sur machine modeste (backdrop-filter ne scale pas).
+
 ## Quoi
 App desktop de communication P2P chiffrée E2E, esthétique « station de contrôle » (réf. terminal-industries.com).
 Priorité design. Souverain : aucun serveur de signaling, aucun relais. Échange via dead-drop SDP.

@@ -6,6 +6,20 @@ src/
   App.tsx                       Porte : scène + AuthGate (anon/locked) OU <SessionApp> (ready)
   SessionApp.tsx                App authentifiée : hooks par-compte (adresse garantie) + panneaux
   index.css                     Tailwind v4 + fonts + design system global
+  workspace/                    Shell post-login « canvas-OS » (remplace l'ancien shell/)
+    Workspace.tsx               Racine : topologie + HUD + dock + fenêtres, câblé sur l'état réel
+    workspace.css               Chrome (dock/fenêtres/context-menu/HUD), sur tokens existants
+    network-canvas/topology-engine.ts  Moteur 2D pur : nodes/pulses/relai pilotés par snapshot réel
+    network-canvas/NetworkCanvas.tsx   Pont React ⇆ moteur (sync snapshot + pulse impératif)
+    window-manager/use-window-manager.ts  État fenêtres : open/focus/z-order/close/move
+    window-manager/Window.tsx   Chrome d'une fenêtre (titlebar draggable + corps)
+    window-manager/Dock.tsx     Dock bas + badges live + contrôle présence
+    windows/Tabs.tsx            Onglets internes d'une fenêtre
+    windows/NetworkWindow.tsx   Peers/Requests/Discover (FriendsList/FriendRequests/AddFriend)
+    windows/MessagesWindow.tsx  Liste des conversations (dernier message, non-lus, présence)
+    windows/IdentityWindow.tsx  IdentityCard + RecoveryPanel + BackupPanel
+    windows/SystemWindow.tsx    SettingsPanel + VisualSettingsPanel + about
+    windows/ConversationWindow.tsx  MessageStream réel (SAS, pins, composer) par pair
   shared/
     types.ts                    Types transverses (phase, identité, message)
     local-store.ts              localStorage typé + stockage cloisonné par compte (acct.<addr>.*)
@@ -68,7 +82,7 @@ src/
     network-core.ts / shaders.ts        Géométrie + GLSL
     NetworkScene.tsx                    Scène + post-process ; BloomDriver = pulse réactif (pulseToken)
     DataCore.tsx / DataStreams.tsx / ParticleField.tsx   (couleur accent + densité paramétrables)
-  boot/  hud/                   Overlay d'intro + bandeaux data
+  boot/                         Overlay d'intro (BootSequence)
 relay/src/                      Node de rendez-vous aveugle (Bun WS, déployé sur le Pi)
   server.ts                     Bun.serve WS : routing + présence
   registry.ts                   Sockets en ligne (1 par adresse) + token bucket

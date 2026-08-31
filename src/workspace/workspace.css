@@ -1,0 +1,164 @@
+/* Workspace canvas-OS — shell post-login. S'appuie sur les tokens de design/tokens.css. */
+
+.ws {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--text-hi);
+}
+/* canvas isolé sur sa propre couche GPU : ses repaints n'invalident plus le reste de l'écran */
+.ws-canvas { position: absolute; inset: 0; z-index: 0; display: block; transform: translateZ(0); will-change: transform; }
+
+/* ============ HUD corners ============ */
+.ws-hud {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mid);
+}
+.ws-hud .corner { position: absolute; padding: 14px 18px; }
+.ws-hud .tl { top: 0; left: 0; }
+.ws-hud .tr { top: 0; right: 0; text-align: right; }
+.ws-hud .bl { bottom: 0; left: 0; }
+.ws-hud .br { bottom: 0; right: 0; text-align: right; }
+.ws-hud .wordmark { font-weight: 600; font-size: 13px; color: var(--text-hi); letter-spacing: 0.06em; }
+.ws-hud .dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); vertical-align: 1px;
+}
+.ws-hud .status { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); }
+.ws-hud .status .val { color: var(--accent); }
+.ws-hud .val-bad { color: var(--danger); }
+
+/* ============ DOCK ============ */
+.ws-dock {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 8px; z-index: 20;
+  background: rgba(8, 10, 12, 0.96);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.ws-dock-btn {
+  width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent; color: var(--text-mid);
+  font-size: 18px; cursor: pointer; border-radius: 6px; position: relative;
+  transition: color .12s ease, border-color .12s ease, background-color .12s ease;
+}
+.ws-dock-btn:hover { color: var(--accent); border-color: var(--line-bright); background: rgba(0, 255, 157, 0.04); }
+.ws-dock-btn.has-open { color: var(--accent); }
+.ws-dock-btn.has-open::after {
+  content: ''; position: absolute; bottom: -3px; left: 50%; transform: translateX(-50%);
+  width: 18px; height: 1.5px; background: var(--accent); box-shadow: 0 0 5px var(--accent-glow);
+}
+.ws-dock-btn .badge {
+  position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px;
+  font-size: 9px; line-height: 15px; border-radius: 8px; background: var(--accent);
+  color: var(--void); font-weight: 700; text-align: center;
+}
+.ws-dock-btn .tip {
+  position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+  background: rgba(12, 15, 17, 0.92); border: 1px solid var(--line); padding: 5px 10px;
+  border-radius: 4px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-hi); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s;
+}
+.ws-dock-btn:hover .tip { opacity: 1; }
+.ws-dock-sep { width: 1px; background: var(--line); margin: 6px 4px; }
+
+/* ============ WINDOWS ============ */
+.ws-win {
+  position: absolute; min-width: 320px; min-height: 180px; display: flex; flex-direction: column;
+  /* fond solide (pas de backdrop-filter : il ne scale pas une fois empilé au-dessus du canvas
+     animé → repaint/flicker). Le canvas vivant reste visible autour de la fenêtre. */
+  background: rgba(9, 11, 13, 0.97);
+  border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
+  contain: layout paint style;
+}
+.ws-win.dragging { will-change: transform; }
+.ws-win.focused { border-color: var(--line-bright); box-shadow: 0 0 0 1px var(--accent-glow), 0 24px 60px rgba(0, 0, 0, 0.55); }
+.ws-titlebar {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-bottom: 1px solid var(--line); cursor: grab; user-select: none; flex-shrink: 0;
+}
+.ws-titlebar:active { cursor: grabbing; }
+.ws-titlebar .icon { font-size: 13px; color: var(--accent); }
+.ws-titlebar .title { flex: 1; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-titlebar .sub { font-size: 10px; color: var(--text-mid); }
+.ws-ctrl {
+  background: transparent; border: none; color: var(--text-mid); cursor: pointer; font-size: 13px;
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 3px;
+}
+.ws-ctrl:hover { color: var(--danger); background: rgba(255, 59, 84, 0.08); }
+.ws-body { flex: 1; overflow: auto; min-height: 0; }
+
+/* tabs */
+.ws-tabs { display: flex; padding: 0 12px; border-bottom: 1px solid var(--line); gap: 2px; flex-shrink: 0; }
+.ws-tab {
+  padding: 8px 12px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-mid); cursor: pointer; border-bottom: 2px solid transparent; background: transparent; border-top: none; border-left: none; border-right: none;
+}
+.ws-tab:hover { color: var(--text-hi); }
+.ws-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.ws-tab .count {
+  display: inline-block; margin-left: 5px; min-width: 14px; padding: 0 4px; font-size: 9px;
+  border-radius: 8px; background: rgba(255, 176, 32, 0.15); color: var(--warn); text-align: center;
+}
+.ws-pane { padding: 14px; }
+.ws-pane-label { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mid); margin-bottom: 8px; }
+.ws-empty { padding: 24px 12px; text-align: center; font-size: 11px; color: var(--text-mid); line-height: 1.7; }
+
+/* generic list row inside windows */
+.ws-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+  border-left: 2px solid transparent; position: relative;
+}
+.ws-row:hover { background: rgba(0, 255, 157, 0.04); border-left-color: var(--accent-dim); }
+.ws-row .presence { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--text-lo); }
+.ws-row .presence.online { background: var(--accent); box-shadow: 0 0 5px var(--accent-glow); }
+.ws-row .presence.away { background: var(--warn); }
+.ws-row .handle { font-size: 12px; color: var(--text-hi); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-row:hover .handle { color: var(--accent); }
+.ws-row .meta { font-size: 10px; color: var(--text-mid); }
+.ws-row .verified { color: var(--accent); font-size: 11px; }
+.ws-row .unread { font-size: 9px; background: var(--accent); color: var(--void); padding: 1px 6px; border-radius: 8px; font-weight: 700; }
+
+/* ============ context menu ============ */
+.ws-ctx {
+  position: fixed; min-width: 180px; padding: 4px 0; z-index: 999; display: none;
+  background: rgba(10, 12, 14, 0.98);
+  border: 1px solid var(--line-bright); border-radius: 5px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.ws-ctx.show { display: block; }
+.ws-ctx-item { padding: 7px 14px; font-size: 11px; cursor: pointer; color: var(--text-hi); display: flex; align-items: center; gap: 8px; }
+.ws-ctx-item:hover { background: rgba(0, 255, 157, 0.08); color: var(--accent); }
+.ws-ctx-item.danger:hover { background: rgba(255, 59, 84, 0.08); color: var(--danger); }
+.ws-ctx-item.disabled { color: var(--text-lo); cursor: not-allowed; }
+.ws-ctx-item .k { margin-left: auto; font-size: 9px; color: var(--text-lo); }
+.ws-ctx-sep { height: 1px; background: var(--line); margin: 4px 0; }
+
+/* ============ presence popup ============ */
+.ws-presence-pop {
+  position: absolute; bottom: 82px; padding: 8px; z-index: 21; display: none; flex-direction: column; gap: 4px;
+  background: rgba(10, 12, 14, 0.98);
+  border: 1px solid var(--line-bright); border-radius: 6px;
+}
+.ws-presence-pop.show { display: flex; }
+.ws-presence-pop button {
+  background: transparent; border: 1px solid transparent; color: var(--text-hi);
+  font-family: inherit; font-size: 10px; padding: 7px 14px; text-align: left; cursor: pointer;
+  border-radius: 4px; letter-spacing: 0.05em;
+}
+.ws-presence-pop button:hover { background: rgba(0, 255, 157, 0.06); border-color: var(--line); }
+.ws-presence-pop button.active { color: var(--accent); border-color: var(--accent-dim); }
+
+/* ============ incoming notice ============ */
+.ws-incoming {
+  position: absolute; top: 46px; left: 50%; transform: translateX(-50%); padding: 8px 16px; z-index: 18;
+  border-radius: 20px; font-size: 11px; display: none; align-items: center; gap: 8px; cursor: pointer;
+  background: rgba(10, 12, 14, 0.98); border: 1px solid var(--line-bright); color: var(--text-hi);
+}
+.ws-incoming.show { display: flex; }
+.ws-incoming .pdot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: ws-pulse 1.4s infinite; }
+@keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* window mount animation */
+@keyframes ws-win-open { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.ws-win { animation: ws-win-open .18s var(--ease-out); }

@@ -6,11 +6,12 @@ import type { RelaySetting } from './use-relay-setting'
 interface Props {
   relay: RelaySetting
   relayOnline: boolean
+  defaultOpen?: boolean
 }
 
 /** Réglages : source du node de rendez-vous + état de connexion en direct. */
-export function SettingsPanel({ relay, relayOnline }: Props): React.ReactElement {
-  const [open, setOpen] = useState(false)
+export function SettingsPanel({ relay, relayOnline, defaultOpen = false }: Props): React.ReactElement {
+  const [open, setOpen] = useState(defaultOpen)
   const [draft, setDraft] = useState(relay.relayUrl)
 
   const apply = (url: string): void => { setDraft(url); relay.setRelayUrl(url) }
